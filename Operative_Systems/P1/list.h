@@ -6,8 +6,10 @@
 #include <time.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #define LNULL NULL
 #define MAX_PROMPT 16384

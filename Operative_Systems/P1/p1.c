@@ -5,7 +5,7 @@
 
 int main()
 {
-	char command[MAX_PROMPT], *full_command[MAX_PROMPT];
+	char command[MAX_PROMPT], *full_command[MAX_PROMPT], *username = getenv("USER"), dir[MAX_PROMPT];
 
 	//se crean las listas de historial y archivos abiertos
 	tList command_history;
@@ -18,9 +18,25 @@ int main()
 	insertItem("Descriptor: 1 -> salida estandar O_RDWR", LNULL, &open_files);
 	insertItem("Descriptor: 2 -> error estandar O_RDWR", LNULL, &open_files);
 	
+	//obtencion de nombre de usuario y nodename para formato de input
+	if (username == NULL)
+	{
+    	perror("No se pudo obtener el nombre de usuario.\n");
+		f_quit(&command_history, &open_files);
+	}
+	struct utsname unameData;
+	uname(&unameData);
+
 	while (true)
 	{
-		printf("-> ");
+		//obtencion de directorio actual para formato de input
+		if (getcwd(dir, MAX_PROMPT)==0)
+		{
+    		perror("No se pudo obtener el directorio actual.\n");
+			f_quit(&command_history, &open_files);
+		}
+
+		printf("\033[1;34m%s@%s\033[1;37m:\033[1;33m%s\033[0m$ ", username, unameData.nodename, dir);
 		//se guarda en command el comando escrito
 		fgets(command, MAX_PROMPT, stdin);
 

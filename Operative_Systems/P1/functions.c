@@ -421,10 +421,41 @@ void f_create(char ** command)
     if (command[1]==NULL)
         printCurrentDir();
     else if (mkdir(command[1], 0777)!=0)
-        perror("Imposible crear directorio\n");
+        perror("Imposible crear directorio");
 }
 
+void f_stat(char ** command)
+{
+    
+}
 
+void f_list(char ** command)
+{
+    if (command[1]==NULL)
+    {
+        printCurrentDir();
+        return;
+    }
+
+    DIR *dir = opendir(command[1]);
+
+    if (dir == NULL) 
+    {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    struct stat fileInfo;
+    struct dirent *currentFile;
+
+    while ((currentFile = readdir(dir)) != NULL && stat(currentFile->d_name, &fileInfo) == 0) 
+    {
+        printf("%lld  %s\n",(long long)fileInfo.st_size, currentFile->d_name);
+    }
+
+    closedir(dir)
+    return 0;
+}
 
 
 
@@ -466,7 +497,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "create"))
         f_create(command);
     else if (!strcmp(command[0], "stat"))
-        return;
+        f_stat(command);
     else if (!strcmp(command[0], "list"))
         return;
     else if (!strcmp(command[0], "delete"))
