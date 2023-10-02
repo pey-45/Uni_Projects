@@ -106,7 +106,7 @@ bool isDigitString(char * string)
 
 void printCurrentDir()
 {
-    char *dir = malloc(sizeof(char*));
+    char *dir = malloc(MAX_PROMPT*sizeof(char*));
 
     getcwd(dir, MAX_PROMPT);
     printf("%s\n", dir);
