@@ -453,7 +453,7 @@ void f_list(char ** command)
         printf("%lld  %s\n",(long long)fileInfo.st_size, currentFile->d_name);
     }
 
-    closedir(dir)
+    closedir(dir);
     return 0;
 }
 
