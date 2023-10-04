@@ -99,4 +99,26 @@ class ReleaseTest {
         assertEquals(beatlesSFFPennyLane.hashCode(), beatlesPennyLanePromo.hashCode()); // Same but with flipped sides.
         assertEquals(madonnaAngelUSMaxiSingle.hashCode(), madonnaIntoTheGrooveUSMaxiSingle.hashCode()); // Same but with flipped sides.
     }
+
+    @Test
+    void testToString()
+    {
+        assertEquals(beatlesSFFPennyLane.toString(), "eadb40cc-9394-3787-80c3-644ed4a167c0: Strawberry Fields Forever / Penny Lane from Beatles\n" +
+                "\n" +
+                "Track 1:\n" +
+                "\n" +
+                "Position: A\n" +
+                "Recording: 6f5f27e2-fe6d-4c98-be0b-1e58d569909c\n" +
+                "Artist: The Beatles\n" +
+                "Title: Strawberry Fields Forever\n" +
+                "Duration: 251s\n" +
+                "\n" +
+                "Track 2:\n" +
+                "\n" +
+                "Position: AA\n" +
+                "Recording: 5a6becfb-07e3-4286-8de0-5b4fa826f3f2\n" +
+                "Artist: The Beatles\n" +
+                "Title: Penny Lane\n" +
+                "Duration: 178s\n\n");
+    }
 }

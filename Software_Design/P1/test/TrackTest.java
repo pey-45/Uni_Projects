@@ -59,4 +59,14 @@ class TrackTest {
         assertEquals(beatlesSFFPennyLane01.hashCode(), beatlesPennyLanePromo02.hashCode());
         assertEquals(beatlesSFFPennyLane01.hashCode(), beatlesSFFDigital01.hashCode());
     }
+
+    @Test
+    void testToString()
+    {
+        assertEquals(beatlesSFFDigital01.toString(), "Position: 1\n" +
+                "Recording: 6f5f27e2-fe6d-4c98-be0b-1e58d569909c\n" +
+                "Artist: The Beatles\n" +
+                "Title: Strawberry Fields Forever (Remastered 2009)\n" +
+                "Duration: 238s");
+    }
 }
