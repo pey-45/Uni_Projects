@@ -1,3 +1,5 @@
+package ej2;
+
 public class ImmutableMatrix
 {
     private final int[][] arr;

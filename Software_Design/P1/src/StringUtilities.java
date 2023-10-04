@@ -1,3 +1,5 @@
+package ej1;
+
 public class StringUtilities
 {
     public static boolean isValidString (String string, String valid_characters, int size)
@@ -5,7 +7,6 @@ public class StringUtilities
         boolean found;
         int i, j;
 
-        //verifies if string is null, empty or smaller than the size
         if( string == null || string.isEmpty() || string.length() < size)
             return false;
 
@@ -13,7 +14,7 @@ public class StringUtilities
         for (i = 0; i < string.length(); ++i)
         {
             //is it a digit?
-            if (string.charAt(i)>=48 && string.charAt(i)<=57)
+            if (Character.isDigit(string.charAt(i)))
                 continue;
 
             //is it in the valid characters string?
