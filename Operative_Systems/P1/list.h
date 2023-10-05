@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <pwd.h>
+#include <grp.h>
 
 #define LNULL NULL
 #define MAX_PROMPT 16384

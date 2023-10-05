@@ -15,7 +15,7 @@ void f_infosys();
 void f_help(char ** command);
 void f_quit(tList * command_history, tList * open_files);
 void f_invalid();
-void f_create(char ** command);
+void f_create(char ** command, tList *open_files);
 void f_stat(char ** command);
 void f_list(char ** command);
 void f_delete(char ** command);

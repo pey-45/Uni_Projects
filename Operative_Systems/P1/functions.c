@@ -416,46 +416,56 @@ void f_invalid()
     printf("No ejecutado: No such file or directory\n");
 }
 
-void f_create(char ** command)
+void f_create(char ** command, tList * open_files)
 {
-    if (command[1]==NULL)
+    char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
+
+    if (command[1]==NULL || (!strcmp(command[1], "-f") && command[2]==NULL))
         printCurrentDir();
+    else if (!strcmp(command[1], "-f"))
+    {
+        sprintf(string, "open %s cr", command[2]);
+        TrocearCadena(string, strings);
+        f_open(strings, open_files);
+    }
     else if (mkdir(command[1], 0777)!=0)
         perror("Imposible crear directorio");
+    
+    free(string);
+    free(strings);
 }
 
 void f_stat(char ** command)
 {
-    
+    struct stat attr;
+    char **params = malloc(MAX_PROMPT*sizeof(char*)), **files = malloc(MAX_PROMPT*sizeof(char*));
+
+    int i;
+    bool in_files = false;
+    for (i = 1; command[i]!=NULL; i++)
+    {
+        if (strcmp(command[i+1], "-long")!=0 && strcmp(command[i+1], "-link")!=0 && strcmp(command[i+1], "-acc")!=0)
+            in_files = true;
+
+        if (!in_files)
+            strcpy(params[i-1], command[i]);
+        else
+            strcpy(files[i-1-sizeof(params)], command[i]);
+    }
+
+    bool has_long = false;
+    for (i = 0; i < sizeof(params); i++)
+    {
+        if (!strcmp(params[i], "-long"))
+            has_long = true;
+    }
+    printLong("a.tx", attr);
+
+    free(params);
+    free(files);
 }
 
-void f_list(char ** command)
-{
-    if (command[1]==NULL)
-    {
-        printCurrentDir();
-        return;
-    }
 
-    DIR *dir = opendir(command[1]);
-
-    if (dir == NULL) 
-    {
-        perror("Error al abrir el directorio");
-        return;
-    }
-
-    struct stat fileInfo;
-    struct dirent *currentFile;
-
-    while ((currentFile = readdir(dir)) != NULL && stat(currentFile->d_name, &fileInfo) == 0) 
-    {
-        printf("%lld  %s\n",(long long)fileInfo.st_size, currentFile->d_name);
-    }
-
-    closedir(dir);
-    return 0;
-}
 
 
 
@@ -495,7 +505,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "clear"))
         system("clear");
     else if (!strcmp(command[0], "create"))
-        f_create(command);
+        f_create(command, open_files);
     else if (!strcmp(command[0], "stat"))
         f_stat(command);
     else if (!strcmp(command[0], "list"))

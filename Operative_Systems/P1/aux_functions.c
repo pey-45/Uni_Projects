@@ -96,7 +96,7 @@ void printHistUntil(int limit, tList L)
 bool isDigitString(char * string)
 {
     //devuelve si el string consta únicamente de digitos
-    for (int i = 0; i < strlen(string); ++i)
+    for (int i = 0; i < (int)strlen(string); ++i)
     {
         if (!isdigit(string[i]))
             return false;
@@ -112,4 +112,76 @@ void printCurrentDir()
     printf("%s\n", dir);
 
     free(dir);
+}
+
+char LetraTF (mode_t m)
+{
+     switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
+        case S_IFSOCK: return 's'; /*socket */
+        case S_IFLNK: return 'l'; /*symbolic link*/
+        case S_IFREG: return '-'; /* fichero normal*/
+        case S_IFBLK: return 'b'; /*block device*/
+        case S_IFDIR: return 'd'; /*directorio */ 
+        case S_IFCHR: return 'c'; /*char device*/
+        case S_IFIFO: return 'p'; /*pipe*/
+        default: return '?'; /*desconocido, no deberia aparecer*/
+     }
+}
+
+void printLong(char * file, struct stat attr)
+{
+    int year, month, day, hour, min;
+    nlink_t n_link;
+    ino_t n_ino;
+    mode_t mode;
+    char *permissions = malloc(12*sizeof(char*));
+    off_t size;
+    struct passwd *prop;
+    struct group *group;
+    
+    if (!lstat(file, &attr))
+    {
+        time_t timestamp = attr.st_mtime;
+        struct tm *timeinfo = localtime(&timestamp);
+        //sch_time = attr.st_ctime;
+        //acc_time = attr.st_atime;
+        n_link = attr.st_nlink;
+        n_ino = attr.st_ino;
+        year = timeinfo->tm_year;
+        month = timeinfo->tm_mon;
+        day = timeinfo->tm_mday;
+        hour = timeinfo->tm_hour;
+        min = timeinfo->tm_min;
+        mode = attr.st_mode;
+        size = attr.st_size;
+        prop = getpwuid(attr.st_uid);
+        group = getgrgid(attr.st_gid);
+    }
+    ConvierteModo(mode, permissions);
+
+
+    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s\n", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
+
+    free(permissions);
+}
+
+char * ConvierteModo (mode_t m, char *permisos)
+{
+    strcpy (permisos,"---------- ");
+    
+    permisos[0]=LetraTF(m);
+    if (m&S_IRUSR) permisos[1]='r';    /*propietario*/
+    if (m&S_IWUSR) permisos[2]='w';
+    if (m&S_IXUSR) permisos[3]='x';
+    if (m&S_IRGRP) permisos[4]='r';    /*grupo*/
+    if (m&S_IWGRP) permisos[5]='w';
+    if (m&S_IXGRP) permisos[6]='x';
+    if (m&S_IROTH) permisos[7]='r';    /*resto*/
+    if (m&S_IWOTH) permisos[8]='w';
+    if (m&S_IXOTH) permisos[9]='x';
+    if (m&S_ISUID) permisos[3]='s';    /*setuid, setgid y stickybit*/
+    if (m&S_ISGID) permisos[6]='s';
+    if (m&S_ISVTX) permisos[9]='t';
+    
+    return permisos;
 }
