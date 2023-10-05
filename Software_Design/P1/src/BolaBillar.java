@@ -27,13 +27,9 @@ public class BolaBillar
 
         Bola (int num, String color, String type)
         {
-            if (num >= 0 && num <= 15 && color!=null && type!=null)
-            {
-                this.num = num;
-                this.color = color;
-                this.type = type;
-            }
-            else throw new IllegalArgumentException();
+            this.num = num;
+            this.color = color;
+            this.type = type;
         }
 
         public int getNum() { return this.num; }
@@ -41,8 +37,13 @@ public class BolaBillar
         public String getType() { return this.type; }
     }
 
-    public BolaBillar(Bola bola)
+    private Bola bola;
+    public BolaBillar(int n)
     {
-
+        for (Bola bola : Bola.values())
+        {
+            if (n==bola.getNum())
+                this.bola = bola;
+        }
     }
 }
