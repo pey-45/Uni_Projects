@@ -1,7 +1,7 @@
 #include "aux_functions.h"
 
 
-int TrocearCadena(char * cadena, char * trozos[])
+int TrocearCadena(char * cadena, char ** trozos)
 {
     /*asigna al array de cadenas los elementos separados 
     por espacios, tabs o saltos de línea y devuelve la cantidad de trozos*/
@@ -143,8 +143,6 @@ void printLong(char * file, struct stat attr)
     {
         time_t timestamp = attr.st_mtime;
         struct tm *timeinfo = localtime(&timestamp);
-        //sch_time = attr.st_ctime;
-        //acc_time = attr.st_atime;
         n_link = attr.st_nlink;
         n_ino = attr.st_ino;
         year = timeinfo->tm_year;
@@ -157,12 +155,71 @@ void printLong(char * file, struct stat attr)
         prop = getpwuid(attr.st_uid);
         group = getgrgid(attr.st_gid);
     }
+    else
+    {
+        perror("No se ha podido hacer lstat");
+        free(permissions);
+        return;
+    }
     ConvierteModo(mode, permissions);
 
 
-    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s\n", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
+    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s ", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
+    //se añade un espacio para añadir el link en caso de necesitarlo
 
     free(permissions);
+}
+
+void printLink(const char *file) 
+{
+    char *link_path = malloc(MAX_PROMPT*sizeof(char*));
+    ssize_t length = readlink(file, link_path, sizeof(link_path) - 1);
+
+    if (length != -1) 
+    {
+        link_path[length] = '\0'; 
+        printf("%s", link_path);
+    }
+    //si no es link no imprime nada
+
+    free(link_path);
+}
+
+void printAcc(const char *file, struct stat attr)
+{
+    int year, month, day, hour, min;
+    if (!lstat(file, &attr))
+    {
+        time_t timestamp = attr.st_mtime;
+        struct tm *timeinfo = localtime(&timestamp);
+        year = timeinfo->tm_year;
+        month = timeinfo->tm_mon;
+        day = timeinfo->tm_mday;
+        hour = timeinfo->tm_hour;
+        min = timeinfo->tm_min;
+    }
+    else
+    {
+        perror("No se ha podido hacer lstat");
+        return;
+    }
+
+    printf("%d/%02d/%02d-%02d:%02d ", 1900+year, month+1, day, hour, min);
+    //se añade un espacio para añadir el link en caso de necesitarlo
+}
+
+void printFew(const char * file, struct stat attr)
+{
+    off_t size;
+    if (!lstat(file, &attr))
+        size = attr.st_size;
+    else
+    {
+        perror("No se ha podido hacer lstat");
+        return;
+    }
+
+    printf("%d %s\n", (int)size, file);
 }
 
 char * ConvierteModo (mode_t m, char *permisos)

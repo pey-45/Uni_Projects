@@ -438,30 +438,131 @@ void f_create(char ** command, tList * open_files)
 void f_stat(char ** command)
 {
     struct stat attr;
-    char **params = malloc(MAX_PROMPT*sizeof(char*)), **files = malloc(MAX_PROMPT*sizeof(char*));
+    char **files = malloc(MAX_PROMPT*sizeof(char*));
 
-    int i;
-    bool in_files = false;
+    int i, breakpoint = 0, files_pos = -1; //-1 para que no se haga free de una posicion nula
+    bool has_long = 0, has_link = 0, has_acc = 0, in_files = 0;
     for (i = 1; command[i]!=NULL; i++)
     {
-        if (strcmp(command[i+1], "-long")!=0 && strcmp(command[i+1], "-link")!=0 && strcmp(command[i+1], "-acc")!=0)
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0)
             in_files = true;
 
+        //cuando deja de haber parametros validos se pasa a guardar los archivos en un array de strings
         if (!in_files)
-            strcpy(params[i-1], command[i]);
+        {
+            //se guarda cuales de los parametros se han pasado
+            if (!strcmp(command[i], "-long"))
+                has_long = 1;
+            else if (!strcmp(command[i], "-link"))
+                has_link = 1;
+            else
+                has_acc = 1;
+            breakpoint++;
+        }       
         else
-            strcpy(files[i-1-sizeof(params)], command[i]);
+        {
+            files_pos = i-1-breakpoint;
+            files[files_pos] = malloc(MAX_PROMPT*sizeof(char*));
+            strcpy(files[files_pos], command[i]);
+        }
     }
 
-    bool has_long = false;
-    for (i = 0; i < sizeof(params); i++)
+    if (files==NULL)
     {
-        if (!strcmp(params[i], "-long"))
-            has_long = true;
+        printCurrentDir();
+        for (int i = 0; i < files_pos+1; i++)
+            free(files[i]);
+        free(files);
+        return;
     }
-    printLong("a.tx", attr);
 
-    free(params);
+    /*
+    -long + -link = printLong printLink
+    -acc + -link = printAcc printLink
+    -long + -acc = printLong
+    nada = printFew (solo el tamaño y el nombre del archivo)
+    Siempre comprobando si es un link al usar -link
+    */
+    if (has_long)
+    {
+        if (has_link)
+        {
+            for (i = 0; i < files_pos+1; i++)
+            {
+                if (stat(files[i], &attr) == 0)
+                {
+                    printLong(files[i], attr);
+                    printLink(files[i]);
+                    printf("\n");
+                }
+                else perror("No se ha podido hacer lstat");
+            }
+        }
+        else
+        {
+            for (i = 0; i < files_pos+1; i++)
+            {
+                if (stat(files[i], &attr) == 0)
+                {
+                    printLong(files[i], attr);
+                    printf("\n");
+                }
+                else perror("No se ha podido hacer lstat");
+            }
+        }
+    }
+    else if (has_acc)
+    {
+        if (has_link)
+        {
+            for (i = 0; i < files_pos+1; i++)
+            {
+                if (stat(files[i], &attr) == 0)
+                {
+                    printAcc(files[i], attr);
+                    printLink(files[i]);
+                    printf("\n");
+                }
+                else perror("No se ha podido hacer lstat");
+            }
+        }
+        else
+        {
+            for (i = 0; i < files_pos+1; i++)
+            {
+                if (stat(files[i], &attr) == 0)
+                {
+                    printAcc(files[i], attr);
+                    printf("\n");
+                }
+                else perror("No se ha podido hacer lstat");
+            }
+        }
+    }
+    else if (has_link)
+    {
+        for (i = 0; i < files_pos+1; i++)
+        {
+            if (stat(files[i], &attr) == 0)
+            {
+                printLink(files[i]);
+                printf("\n");
+            }
+            else perror("No se ha podido hacer lstat");
+        }
+    }
+    else
+    {
+        for (i = 0; i < files_pos+1; i++)
+        {
+            if (stat(files[i], &attr) == 0)
+                printFew(files[i], attr);
+            else perror("No se ha podido hacer lstat");
+        }
+    }
+
+    for (int i = 0; i < files_pos+1; i++)
+        free(files[i]);
     free(files);
 }
 

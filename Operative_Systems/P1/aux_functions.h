@@ -9,4 +9,7 @@ bool isDigitString(char * string);
 void printCurrentDir();
 char LetraTF (mode_t m);
 void printLong(char * file, struct stat attr);
+void printLink(const char * file);
+void printAcc(const char * file, struct stat attr);
+void printFew(const char * file, struct stat attr);
 char * ConvierteModo (mode_t m, char * permisos);
