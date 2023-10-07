@@ -1,6 +1,6 @@
-let x = 1;;
+(*let x = 1;;
 let y = 2;;
-let z = 3;;
+let z = 3;;*)
 
 (*if x > y then "first is greater" else "second is greater";;*)
 (function true -> "first is greater" | false -> "second is greater") (x > y);;
