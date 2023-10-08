@@ -1,6 +1,7 @@
 (*x - y;;*)
 (*- : int = x - y*)
 (*Error: Unbound value x*)
+(*Error de ejecucion porque x (e y) tiene valor nulo*)
 
 let x = 1;;
 (*- : val x = 1*)
@@ -8,6 +9,7 @@ let x = 1;;
 
 (*x - y;;*)
 (*Error: Unbound value y*)
+(*Error de ejecucion porque y tiene valor nulo*)
 
 let y = 2;;
 (*val y : int = 2*)
@@ -25,6 +27,7 @@ x - y;;
 (*z;;*)
 (*val z*)
 (*Error: Unbound value z*)
+(*Error de ejecucion porque z tiene valor nulo*)
 
 let z = x + y;;
 (*val z: int = 3*)
@@ -102,6 +105,7 @@ g 3;;
 (*g 3.0;;*)
 (*Error: Operation has type float but a value was expected of type int*)
 (*Error: This expression has type float but an expression was expected of type int*)
+(*Error de tipo porque "g" es una funcion que recibe valores de tipo int y 3.0 es de tipo float*)
 
 let m = 7;;
 (*val m : int = 7*)
@@ -109,7 +113,6 @@ let m = 7;;
 g 3;;
 (*- : int = 10*)
 (*- : int = 1003*)
-(*LA FUNCION FUE DECLARADA CON EL VALOR DE M = 3, ES COMO SI SE HUBIERA DECLARADO COMO X + 3, ES INMUTABLE*)
 
 let istrue = function true -> true;;
 (*val istrue : bool -> bool = <fun>*)
@@ -123,10 +126,12 @@ istrue (1 < 2);;
 istrue (2 < 1);;
 (*- : bool = false*)
 (*Exception: Match_failure ("//toplevel//", 1, 13)*)
+(*Excepcion porque la funcion "istrue" contempla unicamente la entrada (bool)"true" y la entrada tiene valor (bool)"false"*)
 
 (*istrue 0;;*)
 (*Exception: Match_failure ("//toplevel//", 1, 13)*)
 (*Error: This expression has type int but an expression was expected of type bool*)
+(*Error de tipo porque "istrue" es una funcion que recibe entradas de tipo bool y 0 es de tipo int*)
 
 let iscero_v1 = function 0 -> true;;
 (*val iscero_v1 : int -> bool = <fun>*)
@@ -136,11 +141,12 @@ iscero_v1 0;;
 
 (*iscero_v1 0.;;*)
 (*Error: This expression has type float but an expression was expected of type int*)
+(*Error de tipo porque "iscero_v1" es una funcion que recibe valores de tipo int y 0. es de tipo float*)
 
 iscero_v1 1;;
 (*Exception: Match_failure ("//toplevel//", 1, 13)*)
 (*Exception: Match_failure ("//toplevel//", 1, 16)*)
-
+(*Excepcion porque la funcion "iscero_v1" contempla unicamente la entrada 0 y la entrada tiene valor 1*)
 
 let iscero_v2 = function 0 -> true | _ -> false;;
 (*val iscero_v2 : int -> bool | val -> bool = <fun>*)
@@ -154,6 +160,7 @@ iscero_v2 1;;
 
 (*iscero_v2 0.;;*)
 (*Error: This expression has type float but an expression was expected of type int*)
+(*Error de tipo porque "iscero_v2 es una funcion que recibe valores de tipo int y 0. es de tipo float"*)
 
 let all_to_true = function true -> true | false -> true;;
 (*val all_to_true : bool -> bool = <fun>*)
@@ -166,6 +173,7 @@ all_to_true(2 < 1);;
 
 (*all_to_true 0;;*)
 (*Error: This expression has type int but an expression was expected of type bool*)
+(*Error de tipo porque "all_to_true" es una funcion que recibe valores de tipo bool y 0 es de tipo int*)
 
 let first_all_to_true = all_to_true;;
 (*val first_all_to_true : bool -> bool = <fun>*)
@@ -185,3 +193,4 @@ all_to_true 0;;
 
 (*first_all_to_true 0;;*)
 (*Error: This expression has type int but an expression was expected of type bool*)
+(*Error de tipo porque "first_all_to_true" es una funcion que recibe valores de tipo bool y 0 es de tipo int*)
