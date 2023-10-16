@@ -24,16 +24,13 @@ void ord_ins (int * v, int n);
 void ord_shell (int * v, int n);
 void test(char * inicializacion, void (*initialize) (int*, int), void (*ordenacion) (int*, int));
 double getTimes(int n, void (*order)(int*, int), void (*initialize) (int*, int));
-void tableTimes(void (*order)(int*, int), void (*initialize) (int*, int), char * tipo_ord, double n1, double n2, double theoric, double n3);
+void tableTimes(void (*order)(int*, int), void (*initialize) (int*, int), char * tipo_ord, double n1, double n2, double n3);
 
 void executeTests();
 void executeTables();
 
 
-void inicializar_semilla()
-{
-    srand(time(NULL));
-}
+void inicializar_semilla() { srand(time(NULL)); }
 void aleatorio(int * v, int n)
 {
     int i, m = 2*n+1;
@@ -58,16 +55,14 @@ void printArray(int * v, int n)
     int i;
 
     printf("[");
-    for (i = 0; i < n; ++i)
-        printf("%4d", v[i]);
+    for (i = 0; i < n; ++i) printf("%4d", v[i]);
     printf("  ]");
 }
 double microsegundos()
 {
     struct timeval t;
 
-    if (gettimeofday(&t, NULL) < 0 )
-        return 0.;
+    if (gettimeofday(&t, NULL) < 0 ) return 0.;
     return (t.tv_usec + t.tv_sec * 1000000.);
 }
 
@@ -86,6 +81,11 @@ void ord_ins (int * v, int n)
             v[j+1] = v[j];
             j--;
         }
+        
+        /*
+        for (j = i - 1; j >= 0 && v[j] > x; j--) 
+            v[j+1] = v[j];
+        */
 
         v[j+1] = x;
     }
@@ -140,51 +140,50 @@ void test(char * inicializacion, void (*initialize) (int*, int), void (*ordenaci
 
 double getTimes(int n, void (*order)(int*, int), void (*initialize) (int*, int))
 {
-    double ta, t, t1, t2;
+    double t, t_init;
     const int K = 1000, min_t = 500;
     int i, *v = malloc(n * sizeof(int*));
 
     initialize(v, n);
-    ta = microsegundos();
+    t = microsegundos();
     order(v, n);
-    t = microsegundos() - ta;
+    t = microsegundos() - t;
 
     if (t < min_t)
     {
-        ta = microsegundos();
+        t = microsegundos();
         for (i = 0; i < K; i++)
         {
             initialize(v, n);
             order(v, n);
         }
-        t1 = microsegundos() - ta;
+        t = microsegundos() - t;
 
-        ta = microsegundos();
-        for (i = 0; i < K; i++)
-            initialize(v, n);
-        t2 = microsegundos() - ta;
+        t_init = microsegundos();
+        for (i = 0; i < K; i++) initialize(v, n);
+        t_init = microsegundos() - t_init;
 
-        t = (t1 - t2) / K;
+        t = (t - t_init)/K;
     }
 
-    free(v);
+    
     return t;
 }
 
-void tableTimes(void (*order)(int*, int), void (*initialize) (int*, int), char * tipo_ord, double n1, double n2, double theoric, double n3)
+void tableTimes(void (*order)(int*, int), void (*initialize) (int*, int), char * tipo_ord, double n1, double n2, double n3)
 {
     int i, j;
     const int n_times = 7, init = 500, limit = init * pow(2, n_times-1), alg_repeats = 3;
     long double t;
 
     printf("\n%s:\n\n", tipo_ord);
-    printf("%9s %17s %11s%6.4f %11s%6.4f %11s%6.4f %11s%6.4f\n", "n", "t(n)", "t/n^", n1, "t/n^", n2, "t/n^", theoric, "t/n^", n3);
+    printf("%9s %17s %11s%6.4f %11s%6.4f %11s%6.4f\n", "n", "t(n)", "t/n^", n1, "t/n^", n2, "t/n^", n3);
     for (i = 0; i<alg_repeats; i++)
     {
         for (j = init; j<=limit; j*=2)
         {
             t = getTimes(j, order, initialize);
-            printf("%3s %5d %17.6Lf %17.6Lf %17.6Lf %17.6Lf %17.6Lf\n", t < 500? "(*)" : "", j, t, t/pow(j, n1), t/pow(j, n2), t/pow(j, theoric), t/pow(j, n3));
+            printf("%3s %5d %17.6Lf %17.6Lf %17.6Lf %17.6Lf\n", t < 500? "(*)" : "", j, t, t/pow(j, n1), t/pow(j, n2), t/pow(j, n3));
         }
         printf("\n");
     }
@@ -192,26 +191,25 @@ void tableTimes(void (*order)(int*, int), void (*initialize) (int*, int), char *
 
 void executeTests()
 {
-    test("Ascendente:", initializeAsc, ord_ins);
-    test("Descendente:", initializeDesc, ord_ins);
-    test("Aleatorio:", aleatorio, ord_ins);
+    test("Insercion scendente:", initializeAsc, ord_ins);
+    test("Insercion desordenado:", aleatorio, ord_ins);
+    test("Insercion descendente:", initializeDesc, ord_ins);
     printf("\n");
 
-    printf("Ordenacion shell:\n");
-    test("Ascendente:", initializeAsc, ord_shell);
-    test("Descendente:", initializeDesc, ord_shell);
-    test("Aleatorio:", aleatorio, ord_shell);
+    test("Shell ascendente:", initializeAsc, ord_shell);
+    test("Shell desordenado:", aleatorio, ord_shell);
+    test("Shell descendente:", initializeDesc, ord_shell);
     printf("\n\n");
 }
 
 void executeTables()
 {
-    tableTimes(ord_ins, initializeAsc, "Insercion ascendente", .8, 1, 1, 1.2);
-    tableTimes(ord_ins, aleatorio, "Insercion desordenado", 1.9, 2, 2, 2.1);
-    tableTimes(ord_ins, initializeDesc, "Insercion decendente", 1.8, 2, 2, 2.2);
-    tableTimes(ord_shell, initializeAsc, "Shell ascendente", .8, 1.13, 1, 1.5);
-    tableTimes(ord_shell, aleatorio, "Shell desordenado", .8, 1.19, 1, 1.6);
-    tableTimes(ord_shell, initializeDesc, "Shell descendente", .8, 1.15, 1, 1.5);
+    tableTimes(ord_ins, initializeAsc, "Insercion ascendente", .8, 1, 1.2);
+    tableTimes(ord_ins, aleatorio, "Insercion desordenado", 1.9, 2, 2.1);
+    tableTimes(ord_ins, initializeDesc, "Insercion decendente", 1.8, 2, 2.2);
+    tableTimes(ord_shell, initializeAsc, "Shell ascendente", .8, 1.13, 1.5);
+    tableTimes(ord_shell, aleatorio, "Shell desordenado", .8, 1.19, 1.6);
+    tableTimes(ord_shell, initializeDesc, "Shell descendente", .8, 1.15, 1.5);
 }
 
 int main()
