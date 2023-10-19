@@ -164,7 +164,7 @@ void printLong(char * file, struct stat attr)
     ConvierteModo(mode, permissions);
 
 
-    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s ", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
+    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
     //se añade un espacio para añadir el link en caso de necesitarlo
 
     free(permissions);
@@ -204,7 +204,7 @@ void printAcc(const char *file, struct stat attr)
         return;
     }
 
-    printf("%d/%02d/%02d-%02d:%02d ", 1900+year, month+1, day, hour, min);
+    printf("%d/%02d/%02d-%02d:%02d", 1900+year, month+1, day, hour, min);
     //se añade un espacio para añadir el link en caso de necesitarlo
 }
 
@@ -219,7 +219,7 @@ void printFew(const char * file, struct stat attr)
         return;
     }
 
-    printf("%d %s\n", (int)size, file);
+    printf("%d %s", (int)size, file);
 }
 
 char * ConvierteModo (mode_t m, char *permisos)
@@ -241,4 +241,12 @@ char * ConvierteModo (mode_t m, char *permisos)
     if (m&S_ISVTX) permisos[9]='t';
     
     return permisos;
+}
+
+bool includesString(char * string, char ** strings)
+{
+    if (strings == NULL) return false;
+    int i;
+    for (i = 0; strings[i]!=NULL; i++) if (!strcmp(string, strings[i])) return true;
+    return false;
 }

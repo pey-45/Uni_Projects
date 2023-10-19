@@ -13,3 +13,4 @@ void printLink(const char * file);
 void printAcc(const char * file, struct stat attr);
 void printFew(const char * file, struct stat attr);
 char * ConvierteModo (mode_t m, char * permisos);
+bool includesString(char * string, char ** strings);

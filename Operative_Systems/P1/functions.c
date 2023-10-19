@@ -3,45 +3,29 @@
 void f_authors(char ** command)
 {
     //si no tiene argumentos imprime los nombres y logins
-    if (command[1]==NULL)
-    {
-        printf("Pablo Manzanares Lopez: pablo.manzanares.lopez@udc.es\n");
-        printf("Alejandro Rodriguez Franco: alejandro.rodriguezf@udc.es\n");
-    }
+    if (command[1]==NULL) printf("Pablo Manzanares Lopez: pablo.manzanares.lopez@udc.es\nAlejandro Rodriguez Franco: alejandro.rodriguezf@udc.es\n");
     //si tiene de argumento -l imprime los logins
-    else if (!strcmp(command[1], "-l"))
-    {
-        printf("pablo.manzanares.lopez@udc.es\n");
-        printf("alejandro.rodriguezf@udc.es\n");
-    }
+    else if (!strcmp(command[1], "-l")) printf("pablo.manzanares.lopez@udc.es\nalejandro.rodriguezf@udc.es\n");
     //si tiene de argumento -n imprime los nombres
-    else if (!strcmp(command[1], "-n"))
-    {
-        printf("Pablo Manzanares Lopez\n");
-        printf("Alejandro Rodriguez Franco\n");
-    }
+    else if (!strcmp(command[1], "-n")) printf("Pablo Manzanares Lopez\nAlejandro Rodriguez Franco\n");
     //si no no imprime nada
 }
 
 void f_pid(char ** command)
 {
     //si hay argumentos y ese argumento es -p imprime el pid del padre del shell
-    if (command[1]!=NULL && strcmp(command[1], "-p")==0)
-        printf("Pid del padre del shell: %ld\n", (long)getppid());
+    if (command[1]!=NULL && strcmp(command[1], "-p")==0) printf("Pid del padre del shell: %ld\n", (long)getppid());
     //en cualquier otro caso imprime el pid del shell
-    else
-        printf("Pid de shell: %ld\n", (long)getpid());
+    else printf("Pid de shell: %ld\n", (long)getpid());
 }
 
 void f_chdir(char ** command)
 {
     //si no hay argumentos imprime el directorio actual
-    if (command[1]==NULL)
-        printCurrentDir();
+    if (command[1]==NULL) printCurrentDir();
     /*si el argumento no es un directorio valido salta 
     error, en cualquier otro caso cambia al directorio dado*/
-    else if (chdir(command[1])!=0)
-        perror("Imposible cambiar directorio");
+    else if (chdir(command[1])!=0) perror("Imposible cambiar directorio");
 }
 
 void f_date()
@@ -82,8 +66,7 @@ void f_hist(char ** command, tList * command_history)
     bool error = false;
 
     //si el argumento es -c se borra la lista
-    if (strcmp(command[1], "-c")==0)
-        deleteList(command_history);
+    if (strcmp(command[1], "-c")==0) deleteList(command_history);
     //si no hay que comprobar si lo que hay despues es un numero
     else if (command[1][0]=='-')
     {
@@ -100,13 +83,11 @@ void f_hist(char ** command, tList * command_history)
         strncpy(number, command[1]+1, strlen(command[1]));
 
         //compruebo que number se corresponde con un entero positivo
-        if (!isDigitString(number))
-            error = true;
+        if (!isDigitString(number)) error = true;
 
         /*si hay algun caracter distinto simplemente da error, si no se 
         imprime hasta el numero dado*/
-        if (!error)
-            printHistUntil(atoi(number), *command_history);
+        if (!error) printHistUntil(atoi(number), *command_history);
 
         free(number);
     }
@@ -122,8 +103,7 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     }
 
     //se comprueba que el primer argumento se corresponde con un entero positivo
-    if (!isDigitString(command[1]))
-        return;
+    if (!isDigitString(command[1])) return;
 
     int goal_index = atoi(command[1]), current_index = 0;
     char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
@@ -137,12 +117,12 @@ void f_command(char ** command, tList * command_history, tList * open_files)
 
     tPosL i;
     //se recorre la lista de historial hasta el numero dado o nulo si no se encuentra
-    for (i = first(*command_history); i!=LNULL && current_index<goal_index; i = next(i))
-        ++current_index;
+    for (i = first(*command_history); i!=LNULL && current_index++<goal_index; i = next(i));
+
+    //COMPROBAR CAMBIO EN CURRENTINDEX++
 
     //si no se encuentra da error
-    if (i==NULL)
-        printf("No hay elemento %s en el histórico\n", command[1]);
+    if (i==NULL) printf("No hay elemento %s en el histórico\n", command[1]);
     //si no se ejecuta ese comando
     else
     {
@@ -219,8 +199,7 @@ void f_open(char ** command, tList * open_files)
     }
 
     //se intenta abrir y no se puede da error
-    if ((df=open(command[1], mode, 0777))==-1)
-        perror("Imposible abrir fichero");
+    if ((df=open(command[1], mode, 0777))==-1) perror("Imposible abrir fichero");
     //si no simplemente se abrio y se añade a la lista de ficheros abiertos con su descriptor y modo
     else
     {
@@ -245,15 +224,12 @@ void f_close (char ** command, tList * open_files)
     }
 
     //se comprueba que el primer argumento se corresponde con un entero positivo
-    if (!isDigitString(command[1]))
-        return;
+    if (!isDigitString(command[1])) return;
 
     //se intenta cerrar y no se puede da error
-    if (close(df = atoi(command[1]))==-1)
-        perror("Imposible cerrar descriptor");
+    if (close(df = atoi(command[1]))==-1) perror("Imposible cerrar descriptor");
     //si no simplemente se cerro y se elimina de la lista de ficheros abiertos
-    else
-        deleteAtPosition(getPosByDF(df, *open_files), open_files);
+    else deleteAtPosition(getPosByDF(df, *open_files), open_files);
 }
 
 //funcion completamente auxiliar para evitar la repeticion de codigo en esta funcion especifica
@@ -298,8 +274,7 @@ void f_dup(char ** command, tList * open_files)
     /*guardamos la posicion y si existe almacenamos el string en una variable auxiliar 
     para separarla en un array de cadenas y manipularlas mejor*/
     tPosL pos = getPosByDF(df, *open_files);
-    if (pos!=LNULL)
-        strcpy(aux, getItem(pos));
+    if (pos!=LNULL) strcpy(aux, getItem(pos));
     else
     {
         printf("Imposible duplicar descriptor\n");
@@ -321,7 +296,7 @@ void f_dup(char ** command, tList * open_files)
              || !strcmp(aux_strings[i], "O_RDWR")
              || !strcmp(aux_strings[i], "O_APPEND")
              || !strcmp(aux_strings[i], "O_TRUNC"))
-            && i!=3)
+            && i!=3) 
             inMode = true;
 
         if (!inMode)
@@ -329,8 +304,7 @@ void f_dup(char ** command, tList * open_files)
             strcat(p, aux_strings[i]);
             strcat(p, " ");
         }
-        else
-            strcpy(mode, aux_strings[i]);
+        else strcpy(mode, aux_strings[i]);
     }
     //se quita el espacio sobrante
     p[strlen(p)-1] = '\0';
@@ -345,14 +319,12 @@ void f_dup(char ** command, tList * open_files)
 void f_listopen(char ** command, tList open_files)
 {
     //si no hay argumentos se imprime la lista de archivos abiertos
-    if (command[1]==NULL)
-        printOpenListByDF(open_files);
+    if (command[1]==NULL) printOpenListByDF(open_files);
     else
     {
         /*se comprueba que el primer argumento se corresponde con un entero positivo,
         si lo es se imprime la lista de arhivos abiertos hasta ese numero*/
-        if (!isDigitString(command[1]))
-            return;
+        if (!isDigitString(command[1])) return;
         printOpenListByDFUntil(atoi(command[1]), open_files);
     }
 }
@@ -368,38 +340,22 @@ void f_infosys()
 void f_help(char ** command)
 {
     //se muestra la ayuda correspondiente a cada comando
-    if (command[1]==NULL)
-        printf("'help [cmd|-lt|-T topic]' ayuda sobre comandos\n\t\tComandos disponibles:\nauthors pid chdir date time hist command open close dup listopen infosys help quit exit bye\n");
-    else if (!strcmp(command[1], "authors"))
-        printf("authors [-n|-l]: Muestra los nombres y/o logins de los autores\n");
-    else if (!strcmp(command[1], "pid"))
-        printf("pid [-p]: Muestra el pid del shell o de su proceso padre\n");
-    else if (!strcmp(command[1], "chdir"))
-        printf("chdir [dir]: Cambia (o muestra) el directorio actual del shell\n");
-    else if (!strcmp(command[1], "date"))
-        printf("date: Muestra la fecha actual\n");
-    else if (!strcmp(command[1], "time"))
-        printf("time: Muestra la hora actual\n");
-    else if (!strcmp(command[1], "hist"))
-        printf("hist [-c|-N]: Muestra (o borra) el historico de comandos\n\t-N: muestra los N primeros\n\t-c: borra el historico\n");
-    else if (!strcmp(command[1], "command"))
-        printf("command [-N]: Repite el comando N (del historico)\n");
-    else if (!strcmp(command[1], "open"))
-        printf("open fich m1 m2...:	Abre el fichero fich. y lo anade a la lista de ficheros abiertos del shell\nm1, m2..es el modo de apertura (or bit a bit de los siguientes)\n\tcr: O_CREAT\tap: O_APPEND\n\tex: O_EXCL\tro: O_RDONLY\n\trw: O_RDWR\two: O_WRONLY\n\ttr: O_TRUNC\n");
-    else if (!strcmp(command[1], "close"))
-        printf("close df: Cierra el descriptor df y elimina el correspondiente fichero de la lista de ficheros abiertos\n");
-    else if (!strcmp(command[1], "dup"))
-        printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos\n");
-    else if (!strcmp(command[1], "listopen"))
-        printf("listopen [n]: Lista los ficheros abiertos (al menos n) del shell\n");
-    else if (!strcmp(command[1], "infosys"))
-        printf("infosys: Muestra informacion de la maquina donde corre el shell\n");
-    else if (!strcmp(command[1], "help"))
-        printf("help [cmd|-lt|-T]: Muestra ayuda sobre los comandos\n\t-lt: lista topics de ayuda\n\t-T topic: lista comandos sobre ese topic\n\tcmd: info sobre el comando cmd\n");
-    else if (!strcmp(command[1], "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye"))
-        printf("%s: Termina la ejecucion del shell\n", command[1]);
-    else
-        printf("%s no encontrado\n", command[1]);
+    if (command[1]==NULL) printf("'help [cmd|-lt|-T topic]' ayuda sobre comandos\n\t\tComandos disponibles:\nauthors pid chdir date time hist command open close dup listopen infosys help quit exit bye\n");
+    else if (!strcmp(command[1], "authors")) printf("authors [-n|-l]: Muestra los nombres y/o logins de los autores\n");
+    else if (!strcmp(command[1], "pid")) printf("pid [-p]: Muestra el pid del shell o de su proceso padre\n");
+    else if (!strcmp(command[1], "chdir")) printf("chdir [dir]: Cambia (o muestra) el directorio actual del shell\n");
+    else if (!strcmp(command[1], "date")) printf("date: Muestra la fecha actual\n");
+    else if (!strcmp(command[1], "time")) printf("time: Muestra la hora actual\n");
+    else if (!strcmp(command[1], "hist")) printf("hist [-c|-N]: Muestra (o borra) el historico de comandos\n\t-N: muestra los N primeros\n\t-c: borra el historico\n");
+    else if (!strcmp(command[1], "command")) printf("command [-N]: Repite el comando N (del historico)\n");
+    else if (!strcmp(command[1], "open")) printf("open fich m1 m2...:	Abre el fichero fich. y lo anade a la lista de ficheros abiertos del shell\nm1, m2..es el modo de apertura (or bit a bit de los siguientes)\n\tcr: O_CREAT\tap: O_APPEND\n\tex: O_EXCL\tro: O_RDONLY\n\trw: O_RDWR\two: O_WRONLY\n\ttr: O_TRUNC\n");
+    else if (!strcmp(command[1], "close")) printf("close df: Cierra el descriptor df y elimina el correspondiente fichero de la lista de ficheros abiertos\n");
+    else if (!strcmp(command[1], "dup")) printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos\n");
+    else if (!strcmp(command[1], "listopen")) printf("listopen [n]: Lista los ficheros abiertos (al menos n) del shell\n");
+    else if (!strcmp(command[1], "infosys")) printf("infosys: Muestra informacion de la maquina donde corre el shell\n");
+    else if (!strcmp(command[1], "help")) printf("help [cmd|-lt|-T]: Muestra ayuda sobre los comandos\n\t-lt: lista topics de ayuda\n\t-T topic: lista comandos sobre ese topic\n\tcmd: info sobre el comando cmd\n");
+    else if (!strcmp(command[1], "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye")) printf("%s: Termina la ejecucion del shell\n", command[1]);
+    else printf("%s no encontrado\n", command[1]);
 }
 
 void f_quit(tList * command_history, tList * open_files)
@@ -420,16 +376,14 @@ void f_create(char ** command, tList * open_files)
 {
     char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
 
-    if (command[1]==NULL || (!strcmp(command[1], "-f") && command[2]==NULL))
-        printCurrentDir();
+    if (command[1]==NULL || (!strcmp(command[1], "-f") && command[2]==NULL)) printCurrentDir();
     else if (!strcmp(command[1], "-f"))
     {
         sprintf(string, "open %s cr", command[2]);
         TrocearCadena(string, strings);
         f_open(strings, open_files);
     }
-    else if (mkdir(command[1], 0777)!=0)
-        perror("Imposible crear directorio");
+    else if (mkdir(command[1], 0777)!=0) perror("Imposible crear directorio");
     
     free(string);
     free(strings);
@@ -438,31 +392,42 @@ void f_create(char ** command, tList * open_files)
 void f_stat(char ** command)
 {
     struct stat attr;
-    char **files = malloc(MAX_PROMPT*sizeof(char*));
-
+    char **files = malloc(MAX_PROMPT*sizeof(char*)), **args = malloc(MAX_PROMPT*sizeof(char*));
+    if (files==NULL || args == NULL)
+    {
+        perror("Error al asignar memoria.");
+        return;
+    }
+    bool in_files = 0;
     int i, breakpoint = 0, files_pos = -1; //-1 para que no se haga free de una posicion nula
-    bool has_long = 0, has_link = 0, has_acc = 0, in_files = 0;
+
     for (i = 1; command[i]!=NULL; i++)
     {
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0)
-            in_files = true;
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = true;
 
         //cuando deja de haber parametros validos se pasa a guardar los archivos en un array de strings
         if (!in_files)
         {
+            args[breakpoint] = malloc(MAX_PROMPT*sizeof(char*));
+            if (args[breakpoint]==NULL)
+            {
+                perror("Error al asignar memoria.");
+                return;
+            }
             //se guarda cuales de los parametros se han pasado
-            if (!strcmp(command[i], "-long"))
-                has_long = 1;
-            else if (!strcmp(command[i], "-link"))
-                has_link = 1;
-            else
-                has_acc = 1;
-            breakpoint++;
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
+            else if (!includesString("acc", args)) strcpy(args[breakpoint++], "acc");
         }       
         else
         {
             files_pos = i-1-breakpoint;
             files[files_pos] = malloc(MAX_PROMPT*sizeof(char*));
+            if (files[files_pos]==NULL)
+            {
+                perror("Error al asignar memoria.");
+                return;
+            }
             strcpy(files[files_pos], command[i]);
         }
     }
@@ -470,76 +435,48 @@ void f_stat(char ** command)
     if (files==NULL)
     {
         printCurrentDir();
-        for (int i = 0; i < files_pos+1; i++)
-            free(files[i]);
+        for (int i = 0; i < files_pos+1; i++) free(files[i]);
+        for (int i = 0; i < breakpoint; i++) free(args[i]);
         free(files);
+        free(args);
         return;
     }
 
-    /*
-    -long + -link = printLong printLink
-    -acc + -link = printAcc printLink
-    -long + -acc = printLong
-    nada = printFew (solo el tamaño y el nombre del archivo)
-    Siempre comprobando si es un link al usar -link
-    */
-    if (has_long)
+    if (includesString("long", args))
     {
-        if (has_link)
+        for (i = 0; i < files_pos+1; i++)
         {
-            for (i = 0; i < files_pos+1; i++)
+            if (stat(files[i], &attr) == 0) 
             {
-                if (stat(files[i], &attr) == 0)
+                printLong(files[i], attr);
+                if (includesString("link", args))
                 {
-                    printLong(files[i], attr);
+                    printf(" ");
                     printLink(files[i]);
-                    printf("\n");
                 }
-                else perror("No se ha podido hacer lstat");
+                printf("\n");
             }
-        }
-        else
-        {
-            for (i = 0; i < files_pos+1; i++)
-            {
-                if (stat(files[i], &attr) == 0)
-                {
-                    printLong(files[i], attr);
-                    printf("\n");
-                }
-                else perror("No se ha podido hacer lstat");
-            }
+            else perror("No se ha podido hacer lstat");
         }
     }
-    else if (has_acc)
+    else if (includesString("acc", args))
     {
-        if (has_link)
+        for (i = 0; i < files_pos+1; i++)
         {
-            for (i = 0; i < files_pos+1; i++)
+            if (stat(files[i], &attr) == 0) 
             {
-                if (stat(files[i], &attr) == 0)
+                printAcc(files[i], attr);
+                if (includesString("link", args))
                 {
-                    printAcc(files[i], attr);
+                    printf(" ");
                     printLink(files[i]);
-                    printf("\n");
                 }
-                else perror("No se ha podido hacer lstat");
+                printf("\n");
             }
-        }
-        else
-        {
-            for (i = 0; i < files_pos+1; i++)
-            {
-                if (stat(files[i], &attr) == 0)
-                {
-                    printAcc(files[i], attr);
-                    printf("\n");
-                }
-                else perror("No se ha podido hacer lstat");
-            }
+            else perror("No se ha podido hacer lstat");
         }
     }
-    else if (has_link)
+    else if (includesString("link", args))
     {
         for (i = 0; i < files_pos+1; i++)
         {
@@ -555,17 +492,62 @@ void f_stat(char ** command)
     {
         for (i = 0; i < files_pos+1; i++)
         {
-            if (stat(files[i], &attr) == 0)
+            if (stat(files[i], &attr) == 0) 
+            {
                 printFew(files[i], attr);
+                printf("\n");
+            }
             else perror("No se ha podido hacer lstat");
         }
     }
 
-    for (int i = 0; i < files_pos+1; i++)
-        free(files[i]);
+    for (int i = 0; i < files_pos+1; i++) free(files[i]);
+    for (int i = 0; i < breakpoint; i++) free(args[i]);
     free(files);
+    free(args);
 }
+/*
+void f_list(char ** command)
+{
+    if (command[1]==NULL)
+    {
+        printCurrentDir();
+        return;
+    } 
 
+    bool has_hid = 0, has_reca = 0, has_recb = 0, in_files = 0, has_long = 0, has_link = 0, has_acc = 0;
+    struct dirent *dir;
+    struct stat attr;
+    int i, breakpoint = 0, files_pos = -1;
+    char **files = malloc(MAX_PROMPT*sizeof(char*));
+
+    for (i = 1; command[i]!=NULL; i++)
+    {
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = true;
+
+        //cuando deja de haber parametros validos se pasa a guardar los archivos en un array de strings
+        if (!in_files)
+        {
+            //se guarda cuales de los parametros se han pasado
+            if (!strcmp(command[i], "-hid")) has_hid = 1;
+            else if (!strcmp(command[i], "-reca")) has_reca = 1;
+            else if (!strcmp(command[i], "-recb")) has_recb = 1;
+            else if (!strcmp(command[i], "-long")) has_long = 1;
+            else if (!strcmp(command[i], "-link")) has_link = 1;
+            else if (!strcmp(command[i], "-acc")) has_acc = 1;
+            breakpoint++;
+        }       
+        else
+        {
+            files_pos = i-1-breakpoint;
+            files[files_pos] = malloc(MAX_PROMPT*sizeof(char*));
+            strcpy(files[files_pos], command[i]);
+        }
+    }
+
+
+}
+*/
 
 
 
@@ -573,48 +555,28 @@ void f_stat(char ** command)
 void processCommand(char ** command, tList * command_history, tList * open_files)
 {
     //se ejecuta el comando correspondiente a command
-    if (command[0]==NULL)
-        return;
-    if (!strcmp(command[0], "authors"))
-        f_authors(command);
-    else if (!strcmp(command[0], "pid"))
-        f_pid(command);
-    else if (!strcmp(command[0], "chdir"))
-        f_chdir(command);
-    else if (!strcmp(command[0], "date"))
-        f_date();
-    else if (!strcmp(command[0], "time"))
-        f_time();
-    else if (!strcmp(command[0], "hist"))
-        f_hist(command, command_history);
-    else if (!strcmp(command[0], "command"))
-        f_command(command, command_history, open_files);
-    else if (!strcmp(command[0], "open"))
-        f_open(command, open_files);
-    else if (!strcmp(command[0], "close"))
-        f_close(command, open_files);
-    else if (!strcmp(command[0], "dup"))
-        f_dup(command, open_files);
-    else if (!strcmp(command[0], "listopen"))
-        f_listopen(command, *open_files);
-    else if (!strcmp(command[0], "infosys"))
-        f_infosys();
-    else if (!strcmp(command[0], "help"))
-        f_help(command);
-    else if (!strcmp(command[0], "quit") || !strcmp(command[0], "exit") || !strcmp(command[0], "bye"))
-        f_quit(command_history, open_files);
-    else if (!strcmp(command[0], "clear"))
-        system("clear");
-    else if (!strcmp(command[0], "create"))
-        f_create(command, open_files);
-    else if (!strcmp(command[0], "stat"))
-        f_stat(command);
-    else if (!strcmp(command[0], "list"))
-        return;
-    else if (!strcmp(command[0], "delete"))
-        return;
-    else if (!strcmp(command[0], "deltree"))
-        return;
-    else
-        f_invalid();
+    if (command[0]==NULL) return;
+    if (!strcmp(command[0], "authors")) f_authors(command);
+    else if (!strcmp(command[0], "pid")) f_pid(command);
+    else if (!strcmp(command[0], "chdir")) f_chdir(command);
+    else if (!strcmp(command[0], "date")) f_date();
+    else if (!strcmp(command[0], "time")) f_time();
+    else if (!strcmp(command[0], "hist")) f_hist(command, command_history);
+    else if (!strcmp(command[0], "command")) f_command(command, command_history, open_files);
+    else if (!strcmp(command[0], "open")) f_open(command, open_files);
+    else if (!strcmp(command[0], "close")) f_close(command, open_files);
+    else if (!strcmp(command[0], "dup")) f_dup(command, open_files);
+    else if (!strcmp(command[0], "listopen")) f_listopen(command, *open_files);
+    else if (!strcmp(command[0], "infosys")) f_infosys();
+    else if (!strcmp(command[0], "help")) f_help(command);
+    else if (!strcmp(command[0], "quit") || !strcmp(command[0], "exit") || !strcmp(command[0], "bye")) f_quit(command_history, open_files);
+    else if (!strcmp(command[0], "clear")) system("clear");
+    else if (!strcmp(command[0], "create")) f_create(command, open_files);
+    else if (!strcmp(command[0], "stat")) f_stat(command);
+    else if (!strcmp(command[0], "list")) return;
+    else if (!strcmp(command[0], "delete")) return;
+    else if (!strcmp(command[0], "deltree")) return;
+    else f_invalid();
 }
+
+//hacer if(ptr==NULL) para cada malloc
