@@ -90,14 +90,13 @@ void f_hist(char ** command, tList * command_history)
         if (!error) printHistUntil(atoi(number), *command_history);
 
         free(number);
+        number = NULL;
     }
 }
 
-void f_command(char ** command, tList * command_history, tList * open_files)
-{
+void f_command(char ** command, tList * command_history, tList * open_files) {
     //si no hay argumentos se imprime el historial
-    if (command[1]==NULL)
-    {
+    if (command[1] == NULL) {
         printHistUntil(listLength(*command_history), *command_history);
         return;
     }
@@ -106,26 +105,24 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     if (!isDigitString(command[1])) return;
 
     int goal_index = atoi(command[1]), current_index = 0;
-    char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
+    char *string = malloc(MAX_PROMPT * sizeof(char *)), **strings = malloc(MAX_PROMPT * sizeof(char *));
 
     //se comprueba que hay memoria suficiente
-    if (string==NULL || strings == NULL)
-    {
+    if (string == NULL || strings == NULL) {
         printf("Error al asignar memoria");
         return;
     }
 
     tPosL i;
     //se recorre la lista de historial hasta el numero dado o nulo si no se encuentra
-    for (i = first(*command_history); i!=LNULL && current_index++<goal_index; i = next(i));
+    for (i = first(*command_history); i != LNULL && current_index++ < goal_index; i = next(i));
 
     //COMPROBAR CAMBIO EN CURRENTINDEX++
 
     //si no se encuentra da error
-    if (i==NULL) printf("No hay elemento %s en el histórico\n", command[1]);
-    //si no se ejecuta ese comando
-    else
-    {
+    if (i == NULL) printf("No hay elemento %s en el histórico\n", command[1]);
+        //si no se ejecuta ese comando
+    else {
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
         TrocearCadena(string, strings);
@@ -134,6 +131,8 @@ void f_command(char ** command, tList * command_history, tList * open_files)
 
     free(string);
     free(strings);
+    string = NULL;
+    strings = NULL;
 }
 
 void f_open(char ** command, tList * open_files)
@@ -145,6 +144,10 @@ void f_open(char ** command, tList * open_files)
     if (mode_c == NULL || output == NULL)
     {
         printf("Error al asignar memoria");
+        free(mode_c);
+        free(output);
+        mode_c = NULL;
+        output = NULL;
         return;
     }
 
@@ -154,6 +157,8 @@ void f_open(char ** command, tList * open_files)
         printOpenListByDF(*open_files);
         free(mode_c);
         free(output);
+        mode_c = NULL;
+        output = NULL;
         return;
     }
 
@@ -210,6 +215,8 @@ void f_open(char ** command, tList * open_files)
 
     free(mode_c);
     free(output);
+    mode_c = NULL;
+    output = NULL;
 }
 
 void f_close (char ** command, tList * open_files)
@@ -240,6 +247,11 @@ void free_all_dup(char * output, char * p, char * mode, char * aux, char ** aux_
     free(mode);
     free(aux);
     free(aux_strings);
+    output = NULL;
+    p = NULL;
+    mode = NULL;
+    aux = NULL;
+    aux_strings = NULL;
 }
 void f_dup(char ** command, tList * open_files)
 {
@@ -309,7 +321,7 @@ void f_dup(char ** command, tList * open_files)
     //se quita el espacio sobrante
     p[strlen(p)-1] = '\0';
 
-    //se coloca todo en su lugar y se inserta en la lista de archivos abiertos
+    //se coloca tod0 en su lugar y se inserta en la lista de archivos abiertos
     sprintf(output, "Descriptor: %d -> dup %d (%s) %s", dup(df), df, p, mode);
     insertItem(output, LNULL, open_files);
 
@@ -387,37 +399,87 @@ void f_create(char ** command, tList * open_files)
     
     free(string);
     free(strings);
+    string = NULL;
+    strings = NULL;
 }
 
+//auxiliar
+void free_all_stat(char ** files, char ** args)
+{
+    if (args!=NULL)
+    {
+        for (int i = 0; args[i]!=NULL; i++) 
+        {
+            free(args[i]);
+            args[i] = NULL;
+        }
+        free(args);
+        args = NULL;
+    }
+    if (files!=NULL)
+    {
+        for (int i = 0; files[i]!=NULL; i++)
+        {
+            free(files[i]);
+            files[i] = NULL;
+        } 
+        free(files);
+        files = NULL;
+    }
+}
 void f_stat(char ** command)
 {
     struct stat attr;
+    int i;
+    //reservo memoria para las listas de archivos y argumentos
     char **files = malloc(MAX_PROMPT*sizeof(char*)), **args = malloc(MAX_PROMPT*sizeof(char*));
-    if (files==NULL || args == NULL)
+
+    //si alguna de ellas no se pudo inicializar se liberan ambas (no se sabe cual falló) y termina la funcion
+    if (files == NULL || args == NULL)
     {
         perror("Error al asignar memoria.");
+        free(files);
+        free(args);
+        files = NULL;
+        args = NULL;
         return;
     }
+
+    //inicializo sus elementos como nulos
+    for (i = 0; i < MAX_PROMPT; i++)
+    {
+        files[i] = NULL;
+        args[i] = NULL;
+    }
+
     bool in_files = 0;
-    int i, breakpoint = 0, files_pos = -1; //-1 para que no se haga free de una posicion nula
+    int breakpoint = 0, files_pos;
 
     for (i = 1; command[i]!=NULL; i++)
     {
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = true;
+        //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = 1;
 
-        //cuando deja de haber parametros validos se pasa a guardar los archivos en un array de strings
         if (!in_files)
         {
+            //se inicializa la posicion en la que se guardará el argumento
             args[breakpoint] = malloc(MAX_PROMPT*sizeof(char*));
             if (args[breakpoint]==NULL)
             {
                 perror("Error al asignar memoria.");
+                free_all_stat(files, args);
                 return;
             }
             //se guarda cuales de los parametros se han pasado
             if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
             else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
-            else if (!includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            else
+            {
+                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
+                free(args[breakpoint]);
+                args[breakpoint] = NULL;
+            }
         }       
         else
         {
@@ -426,25 +488,23 @@ void f_stat(char ** command)
             if (files[files_pos]==NULL)
             {
                 perror("Error al asignar memoria.");
+                free_all_stat(files, args);
                 return;
             }
             strcpy(files[files_pos], command[i]);
         }
     }
 
-    if (files==NULL)
+    if (files[0]==NULL)
     {
         printCurrentDir();
-        for (int i = 0; i < files_pos+1; i++) free(files[i]);
-        for (int i = 0; i < breakpoint; i++) free(args[i]);
-        free(files);
-        free(args);
+        free_all_stat(files, args);
         return;
     }
 
     if (includesString("long", args))
     {
-        for (i = 0; i < files_pos+1; i++)
+        for (i = 0; i <= files_pos; i++)
         {
             if (stat(files[i], &attr) == 0) 
             {
@@ -461,7 +521,7 @@ void f_stat(char ** command)
     }
     else if (includesString("acc", args))
     {
-        for (i = 0; i < files_pos+1; i++)
+        for (i = 0; i <= files_pos; i++)
         {
             if (stat(files[i], &attr) == 0) 
             {
@@ -478,7 +538,7 @@ void f_stat(char ** command)
     }
     else if (includesString("link", args))
     {
-        for (i = 0; i < files_pos+1; i++)
+        for (i = 0; i <= files_pos; i++)
         {
             if (stat(files[i], &attr) == 0)
             {
@@ -490,7 +550,7 @@ void f_stat(char ** command)
     }
     else
     {
-        for (i = 0; i < files_pos+1; i++)
+        for (i = 0; i <= files_pos; i++)
         {
             if (stat(files[i], &attr) == 0) 
             {
@@ -501,10 +561,7 @@ void f_stat(char ** command)
         }
     }
 
-    for (int i = 0; i < files_pos+1; i++) free(files[i]);
-    for (int i = 0; i < breakpoint; i++) free(args[i]);
-    free(files);
-    free(args);
+    free_all_stat(files, args);
 }
 /*
 void f_list(char ** command)

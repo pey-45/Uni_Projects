@@ -13,8 +13,7 @@ bool createNode(tPosL *p)
 bool insertItem(tItemL d, tPosL p, tList *L)
 {
     tPosL q, r;
-    if (!createNode(&q))
-        return false;
+    if (!createNode(&q))return false;
     else
     {
         strcpy(q->data, d);
@@ -68,8 +67,7 @@ tPosL previous(tPosL p, tList L)
 {
     tPosL q;
 
-    if (p == L)
-        return LNULL;
+    if (p == L) return LNULL;
     else
     {
         for (q = L; q->next != p; q = q->next);
@@ -101,6 +99,7 @@ void deleteAtPosition(tPosL p, tList *L)
     }
 
     free(p);
+    p = NULL;
 }
 
 void deleteList(tList *L)
@@ -112,6 +111,7 @@ void deleteList(tList *L)
         p = *L;
         *L = (*L)->next;
         free(p);
+        p = NULL;
     }
 }
 

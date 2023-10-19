@@ -6,8 +6,7 @@ int TrocearCadena(char * cadena, char ** trozos)
     /*asigna al array de cadenas los elementos separados 
     por espacios, tabs o saltos de línea y devuelve la cantidad de trozos*/
     int i;
-    if ((trozos[0]=strtok(cadena," \n\t"))==NULL)
-        return 0;
+    if ((trozos[0]=strtok(cadena," \n\t"))==NULL) return 0;
     for (i = 1; (trozos[i]=strtok(NULL," \n\t"))!=NULL; ++i);
     return i;
 }
@@ -29,6 +28,8 @@ tPosL getPosByDF(int df, tList L)
 
     free(string);
     free(strings);
+    string = NULL;
+    strings = NULL;
 
     return i;
 }
@@ -58,6 +59,8 @@ void printOpenListByDF(tList L)
 
     free(string);
     free(strings);
+    string = NULL;
+    strings = NULL;
 }
 
 void printOpenListByDFUntil(int limit, tList L)
@@ -112,19 +115,20 @@ void printCurrentDir()
     printf("%s\n", dir);
 
     free(dir);
+    dir = NULL;
 }
 
 char LetraTF (mode_t m)
 {
-     switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
-        case S_IFSOCK: return 's'; /*socket */
-        case S_IFLNK: return 'l'; /*symbolic link*/
-        case S_IFREG: return '-'; /* fichero normal*/
-        case S_IFBLK: return 'b'; /*block device*/
-        case S_IFDIR: return 'd'; /*directorio */ 
-        case S_IFCHR: return 'c'; /*char device*/
-        case S_IFIFO: return 'p'; /*pipe*/
-        default: return '?'; /*desconocido, no deberia aparecer*/
+     switch (m&S_IFMT) { //and bit a bit con los bits de formato,0170000
+        case S_IFSOCK: return 's'; //socket
+        case S_IFLNK: return 'l'; //symbolic lin
+        case S_IFREG: return '-'; //fichero normal
+        case S_IFBLK: return 'b'; //block device
+        case S_IFDIR: return 'd'; //directorio
+        case S_IFCHR: return 'c'; //char device
+        case S_IFIFO: return 'p'; //pipe
+        default: return '?'; //desconocido, no deberia aparecer
      }
 }
 
@@ -159,6 +163,7 @@ void printLong(char * file, struct stat attr)
     {
         perror("No se ha podido hacer lstat");
         free(permissions);
+        permissions = NULL;
         return;
     }
     ConvierteModo(mode, permissions);
@@ -168,6 +173,7 @@ void printLong(char * file, struct stat attr)
     //se añade un espacio para añadir el link en caso de necesitarlo
 
     free(permissions);
+    permissions = NULL;
 }
 
 void printLink(const char *file) 
@@ -183,6 +189,7 @@ void printLink(const char *file)
     //si no es link no imprime nada
 
     free(link_path);
+    link_path = NULL;
 }
 
 void printAcc(const char *file, struct stat attr)
@@ -227,25 +234,26 @@ char * ConvierteModo (mode_t m, char *permisos)
     strcpy (permisos,"---------- ");
     
     permisos[0]=LetraTF(m);
-    if (m&S_IRUSR) permisos[1]='r';    /*propietario*/
+    if (m&S_IRUSR) permisos[1]='r';    //propietario
     if (m&S_IWUSR) permisos[2]='w';
     if (m&S_IXUSR) permisos[3]='x';
-    if (m&S_IRGRP) permisos[4]='r';    /*grupo*/
+    if (m&S_IRGRP) permisos[4]='r';    //grupo
     if (m&S_IWGRP) permisos[5]='w';
     if (m&S_IXGRP) permisos[6]='x';
-    if (m&S_IROTH) permisos[7]='r';    /*resto*/
+    if (m&S_IROTH) permisos[7]='r';    //resto
     if (m&S_IWOTH) permisos[8]='w';
     if (m&S_IXOTH) permisos[9]='x';
-    if (m&S_ISUID) permisos[3]='s';    /*setuid, setgid y stickybit*/
+    if (m&S_ISUID) permisos[3]='s';    //setuid, setgid y stickybit
     if (m&S_ISGID) permisos[6]='s';
     if (m&S_ISVTX) permisos[9]='t';
     
     return permisos;
 }
 
+
 bool includesString(char * string, char ** strings)
 {
-    if (strings == NULL) return false;
+    if (strings == NULL || string == NULL) return false;
     int i;
     for (i = 0; strings[i]!=NULL; i++) if (!strcmp(string, strings[i])) return true;
     return false;
