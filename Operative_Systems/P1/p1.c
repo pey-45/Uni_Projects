@@ -2,6 +2,7 @@
 //Alejandro Rodríguez Franco  ---  alejandro.rodriguezf@udc.es
 
 #include "functions.h"
+#define ever ;;
 
 int main()
 {
@@ -27,7 +28,7 @@ int main()
 	struct utsname unameData;
 	uname(&unameData);
 
-	while (true)
+	for(ever)
 	{
 		//obtencion de directorio actual para formato de input
 		if (getcwd(dir, MAX_PROMPT)==0)

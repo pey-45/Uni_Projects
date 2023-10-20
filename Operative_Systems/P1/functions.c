@@ -70,9 +70,7 @@ void f_hist(char ** command, tList * command_history)
     //si no hay que comprobar si lo que hay despues es un numero
     else if (command[1][0]=='-')
     {
-        char* number = malloc(MAX_PROMPT * sizeof(char*));
-
-        //se comprueba que hay memoria suficiente
+        char* number = MALLOC;
         if (number==NULL)
         {
             perror("Error al asignar memoria");
@@ -89,8 +87,7 @@ void f_hist(char ** command, tList * command_history)
         imprime hasta el numero dado*/
         if (!error) printHistUntil(atoi(number), *command_history);
 
-        free(number);
-        number = NULL;
+        freeStrings(1, number);
     }
 }
 
@@ -105,11 +102,12 @@ void f_command(char ** command, tList * command_history, tList * open_files) {
     if (!isDigitString(command[1])) return;
 
     int goal_index = atoi(command[1]), current_index = 0;
-    char *string = malloc(MAX_PROMPT * sizeof(char *)), **strings = malloc(MAX_PROMPT * sizeof(char *));
-
-    //se comprueba que hay memoria suficiente
-    if (string == NULL || strings == NULL) {
-        printf("Error al asignar memoria");
+    char *string = MALLOC, **strings = MALLOC_PTR;
+    if (string == NULL || strings == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeStrings(1, string);
+        freeMatrix(1, strings);
         return;
     }
 
@@ -129,25 +127,20 @@ void f_command(char ** command, tList * command_history, tList * open_files) {
         processCommand(strings, command_history, open_files);
     }
 
-    free(string);
-    free(strings);
-    string = NULL;
-    strings = NULL;
+    freeStrings(1, string);
+    freeMatrix(1, strings);
 }
 
 void f_open(char ** command, tList * open_files)
 {
     int i, df, mode = 0;
-    char *mode_c = malloc(MAX_PROMPT * sizeof(char*)), *output = malloc(MAX_PROMPT * sizeof(char*));
+    char *mode_c = MALLOC, *output = MALLOC;
 
     //se comprueba que hay memoria suficiente
     if (mode_c == NULL || output == NULL)
     {
         printf("Error al asignar memoria");
-        free(mode_c);
-        free(output);
-        mode_c = NULL;
-        output = NULL;
+        freeStrings(2, mode_c, output);
         return;
     }
 
@@ -155,10 +148,7 @@ void f_open(char ** command, tList * open_files)
     if (command[1]==NULL)
     {
         printOpenListByDF(*open_files);
-        free(mode_c);
-        free(output);
-        mode_c = NULL;
-        output = NULL;
+        freeStrings(2, mode_c, output);
         return;
     }
 
@@ -213,10 +203,7 @@ void f_open(char ** command, tList * open_files)
         printf("Anadida entrada %d a la tabla ficheros abiertos\n", df);
     }
 
-    free(mode_c);
-    free(output);
-    mode_c = NULL;
-    output = NULL;
+    freeStrings(2, mode_c, output);
 }
 
 void f_close (char ** command, tList * open_files)
@@ -239,31 +226,18 @@ void f_close (char ** command, tList * open_files)
     else deleteAtPosition(getPosByDF(df, *open_files), open_files);
 }
 
-//funcion completamente auxiliar para evitar la repeticion de codigo en esta funcion especifica
-void free_all_dup(char * output, char * p, char * mode, char * aux, char ** aux_strings)
-{
-    free(output);
-    free(p);
-    free(mode);
-    free(aux);
-    free(aux_strings);
-    output = NULL;
-    p = NULL;
-    mode = NULL;
-    aux = NULL;
-    aux_strings = NULL;
-}
 void f_dup(char ** command, tList * open_files)
 {
     int df;
-    char *output = malloc(MAX_PROMPT * sizeof(char*)), *p = malloc(MAX_PROMPT * sizeof(char*)), *mode = malloc(MAX_PROMPT * sizeof(char*)), *aux = malloc(MAX_PROMPT * sizeof(char*)), **aux_strings = malloc(MAX_PROMPT * sizeof(char*));
+    char *output = MALLOC, *p = MALLOC, *mode = MALLOC, *aux = MALLOC, **aux_strings = MALLOC_PTR;
     strcpy(p, "");
 
     //se comprueba que hay memoria suficiente
     if (output == NULL || p == NULL || mode == NULL || aux == NULL || aux_strings == NULL)
     {
-        free_all_dup(output, p, mode, aux, aux_strings);
         printf("Error al asignar memoria");
+        freeStrings(4, output, p, mode, aux);
+        freeMatrix(1, aux_strings);
         return;
     }
 
@@ -271,14 +245,16 @@ void f_dup(char ** command, tList * open_files)
     if (command[1]==NULL)
     {
         printOpenListByDF(*open_files);
-        free_all_dup(output, p, mode, aux, aux_strings);
+        freeStrings(4, output, p, mode, aux);
+        freeMatrix(1, aux_strings);
         return;
     }
 
     //se comprueba que el primer argumento se corresponde con un entero positivo y se guarda en df
     if (!isDigitString(command[1]))
     {
-        free_all_dup(output, p, mode, aux, aux_strings);
+        freeStrings(4, output, p, mode, aux);
+        freeMatrix(1, aux_strings);
         return;
     }
     df = atoi(command[1]);
@@ -290,7 +266,8 @@ void f_dup(char ** command, tList * open_files)
     else
     {
         printf("Imposible duplicar descriptor\n");
-        free_all_dup(output, p, mode, aux, aux_strings);
+        freeStrings(4, output, p, mode, aux);
+        freeMatrix(1, aux_strings);
         return;
     }
     TrocearCadena(aux, aux_strings);
@@ -325,7 +302,8 @@ void f_dup(char ** command, tList * open_files)
     sprintf(output, "Descriptor: %d -> dup %d (%s) %s", dup(df), df, p, mode);
     insertItem(output, LNULL, open_files);
 
-    free_all_dup(output, p, mode, aux, aux_strings);
+    freeStrings(4, output, p, mode, aux);
+    freeMatrix(1, aux_strings);
 }
 
 void f_listopen(char ** command, tList open_files)
@@ -386,7 +364,14 @@ void f_invalid()
 
 void f_create(char ** command, tList * open_files)
 {
-    char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
+    char *string = MALLOC, **strings = MALLOC_PTR;
+    if (string == NULL || strings == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeStrings(1, string);
+        freeMatrix(1, strings);
+        return;
+    }
 
     if (command[1]==NULL || (!strcmp(command[1], "-f") && command[2]==NULL)) printCurrentDir();
     else if (!strcmp(command[1], "-f"))
@@ -397,51 +382,20 @@ void f_create(char ** command, tList * open_files)
     }
     else if (mkdir(command[1], 0777)!=0) perror("Imposible crear directorio");
     
-    free(string);
-    free(strings);
-    string = NULL;
-    strings = NULL;
+    freeStrings(1, string);
+    freeMatrix(1, strings);
 }
 
-//auxiliar
-void free_all_stat(char ** files, char ** args)
-{
-    if (args!=NULL)
-    {
-        for (int i = 0; args[i]!=NULL; i++) 
-        {
-            free(args[i]);
-            args[i] = NULL;
-        }
-        free(args);
-        args = NULL;
-    }
-    if (files!=NULL)
-    {
-        for (int i = 0; files[i]!=NULL; i++)
-        {
-            free(files[i]);
-            files[i] = NULL;
-        } 
-        free(files);
-        files = NULL;
-    }
-}
 void f_stat(char ** command)
 {
     struct stat attr;
     int i;
     //reservo memoria para las listas de archivos y argumentos
-    char **files = malloc(MAX_PROMPT*sizeof(char*)), **args = malloc(MAX_PROMPT*sizeof(char*));
-
-    //si alguna de ellas no se pudo inicializar se liberan ambas (no se sabe cual falló) y termina la funcion
+    char **files = MALLOC_PTR, **args = MALLOC_PTR;
     if (files == NULL || args == NULL)
     {
-        perror("Error al asignar memoria.");
-        free(files);
-        free(args);
-        files = NULL;
-        args = NULL;
+        printf("Error al asignar memoria.");
+        freeMatrix(2, files, args);
         return;
     }
 
@@ -463,13 +417,15 @@ void f_stat(char ** command)
         if (!in_files)
         {
             //se inicializa la posicion en la que se guardará el argumento
-            args[breakpoint] = malloc(MAX_PROMPT*sizeof(char*));
+            args[breakpoint] = MALLOC;
             if (args[breakpoint]==NULL)
             {
                 perror("Error al asignar memoria.");
-                free_all_stat(files, args);
+                freeMatrix(2, files, args);
                 return;
             }
+            args[breakpoint][0] = '\0'; //para evitar fallos con el strcmp
+
             //se guarda cuales de los parametros se han pasado
             if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
             else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
@@ -477,18 +433,18 @@ void f_stat(char ** command)
             else
             {
                 //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                free(args[breakpoint]);
+                freeStrings(1, args[breakpoint]);
                 args[breakpoint] = NULL;
             }
         }       
         else
         {
             files_pos = i-1-breakpoint;
-            files[files_pos] = malloc(MAX_PROMPT*sizeof(char*));
+            files[files_pos] = MALLOC;
             if (files[files_pos]==NULL)
             {
                 perror("Error al asignar memoria.");
-                free_all_stat(files, args);
+                freeMatrix(2, files, args);
                 return;
             }
             strcpy(files[files_pos], command[i]);
@@ -498,7 +454,7 @@ void f_stat(char ** command)
     if (files[0]==NULL)
     {
         printCurrentDir();
-        free_all_stat(files, args);
+        freeMatrix(2, files, args);
         return;
     }
 
@@ -561,7 +517,7 @@ void f_stat(char ** command)
         }
     }
 
-    free_all_stat(files, args);
+    freeMatrix(2, files, args);
 }
 /*
 void f_list(char ** command)
@@ -572,42 +528,71 @@ void f_list(char ** command)
         return;
     } 
 
-    bool has_hid = 0, has_reca = 0, has_recb = 0, in_files = 0, has_long = 0, has_link = 0, has_acc = 0;
     struct dirent *dir;
     struct stat attr;
     int i, breakpoint = 0, files_pos = -1;
-    char **files = malloc(MAX_PROMPT*sizeof(char*));
+    char **dirs = MALLOC_PTR, **args = MALLOC_PTR;
+    bool recAorB;
+
+    if (dirs == NULL || args == NULL)
+    {
+        perror("Error al asignar memoria.");
+        freeMatrix(2, dirs, args);
+        return;
+    }
+
+    //inicializo sus elementos como nulos
+    for (i = 0; i < MAX_PROMPT; i++)
+    {
+        dirs[i] = NULL;
+        args[i] = NULL;
+    }
+
+    bool in_dirs = 0;
+    int breakpoint = 0, dirs_pos;
 
     for (i = 1; command[i]!=NULL; i++)
     {
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = true;
+        //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_dirs = 1;
 
-        //cuando deja de haber parametros validos se pasa a guardar los archivos en un array de strings
-        if (!in_files)
+        if (!in_dirs)
         {
+            //se inicializa la posicion en la que se guardará el argumento
+            args[breakpoint] = MALLOC;
+            args[breakpoint][0] = '\0';
+            if (args[breakpoint]==NULL)
+            {
+                perror("Error al asignar memoria.");
+                freeMatrix(2, dirs, args);
+                return;
+            }
             //se guarda cuales de los parametros se han pasado
-            if (!strcmp(command[i], "-hid")) has_hid = 1;
-            else if (!strcmp(command[i], "-reca")) has_reca = 1;
-            else if (!strcmp(command[i], "-recb")) has_recb = 1;
-            else if (!strcmp(command[i], "-long")) has_long = 1;
-            else if (!strcmp(command[i], "-link")) has_link = 1;
-            else if (!strcmp(command[i], "-acc")) has_acc = 1;
-            breakpoint++;
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            else
+            {
+                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
+                freeStrings(1, args[breakpoint])
+                args[breakpoint] = NULL;
+            }
         }       
         else
         {
-            files_pos = i-1-breakpoint;
-            files[files_pos] = malloc(MAX_PROMPT*sizeof(char*));
-            strcpy(files[files_pos], command[i]);
+            dirs_pos = i-1-breakpoint;
+            dirs[dirs_pos] = MALLOC;
+            if (dirs[dirs_pos]==NULL)
+            {
+                perror("Error al asignar memoria.");
+                freeMatrix(2, dirs, args);
+                return;
+            }
+            strcpy(dirs[dirs_pos], command[i]);
         }
     }
-
-
 }
 */
-
-
-
 
 void processCommand(char ** command, tList * command_history, tList * open_files)
 {

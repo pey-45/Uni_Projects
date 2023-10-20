@@ -12,9 +12,13 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <limits.h>
+#include <stdarg.h>
 
 #define LNULL NULL
 #define MAX_PROMPT 16384
+#define MALLOC_PTR malloc(MAX_PROMPT*sizeof(char*))
+#define MALLOC malloc(MAX_PROMPT*sizeof(char))
 
 typedef char tItemL[MAX_PROMPT];
 typedef struct tNode* tPosL;

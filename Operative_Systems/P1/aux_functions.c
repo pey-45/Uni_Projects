@@ -1,5 +1,46 @@
 #include "aux_functions.h"
 
+void freeStrings(int n, ...)
+{
+    va_list args;
+    va_start(args, n);
+    int i;
+
+    for (i = 0; i < n; i++)
+    {
+        char *aux = va_arg(args, char*);
+        if (aux!=NULL)
+        {
+            free(aux);
+            aux = NULL;
+        }
+    }
+
+    va_end(args);
+}
+
+void freeMatrix(int n, ...)
+{
+    va_list args;
+    va_start(args, n);
+    int i, j;
+
+    for (i = 0; i < n; i++)
+    {
+        char **aux = va_arg(args, char**);
+        if (aux!=NULL)
+        {
+            for (j = 0; aux[j] != NULL; j++) 
+            {
+                free(aux[j]);
+                aux[j] = NULL;
+            }
+            free(aux);
+        }
+    }
+
+    va_end(args);
+}
 
 int TrocearCadena(char * cadena, char ** trozos)
 {
@@ -13,7 +54,14 @@ int TrocearCadena(char * cadena, char ** trozos)
 
 tPosL getPosByDF(int df, tList L)
 {
-    char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
+    char *string = MALLOC, **strings = MALLOC_PTR;
+    if (string == NULL || strings == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeStrings(1, string);
+        freeMatrix(1, strings);
+        return NULL;
+    }
     tPosL i;
 
     /*recorre la lista de archivos abiertos y devuelve la 
@@ -26,10 +74,8 @@ tPosL getPosByDF(int df, tList L)
             break;
     }
 
-    free(string);
-    free(strings);
-    string = NULL;
-    strings = NULL;
+    freeStrings(1, string);
+    freeMatrix(1, strings);
 
     return i;
 }
@@ -37,7 +83,14 @@ tPosL getPosByDF(int df, tList L)
 void printOpenListByDF(tList L)
 {
     int index = 0, last_index;
-    char *string = malloc(MAX_PROMPT*sizeof(char*)), **strings = malloc(MAX_PROMPT*sizeof(char*));
+    char *string = MALLOC, **strings = MALLOC_PTR;
+    if (string == NULL || strings == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeStrings(1, string);
+        freeMatrix(1, strings);
+        return;
+    }
     tPosL i;
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
@@ -57,10 +110,8 @@ void printOpenListByDF(tList L)
         ++index;
     }
 
-    free(string);
-    free(strings);
-    string = NULL;
-    strings = NULL;
+    freeStrings(1, string);
+    freeMatrix(1, strings);
 }
 
 void printOpenListByDFUntil(int limit, tList L)
@@ -109,13 +160,17 @@ bool isDigitString(char * string)
 
 void printCurrentDir()
 {
-    char *dir = malloc(MAX_PROMPT*sizeof(char*));
+    char *dir = MALLOC;
+    if (dir == NULL)
+    {
+        printf("Error al asignar memoria.");
+        return;
+    }
 
     getcwd(dir, MAX_PROMPT);
     printf("%s\n", dir);
 
-    free(dir);
-    dir = NULL;
+    freeStrings(1, dir);
 }
 
 char LetraTF (mode_t m)
@@ -138,7 +193,12 @@ void printLong(char * file, struct stat attr)
     nlink_t n_link;
     ino_t n_ino;
     mode_t mode;
-    char *permissions = malloc(12*sizeof(char*));
+    char *permissions = malloc(12*sizeof(char*)); //no hace falta mas
+    if (permissions == NULL)
+    {
+        printf("Error al asignar memoria.");
+        return;
+    }
     off_t size;
     struct passwd *prop;
     struct group *group;
@@ -162,8 +222,7 @@ void printLong(char * file, struct stat attr)
     else
     {
         perror("No se ha podido hacer lstat");
-        free(permissions);
-        permissions = NULL;
+        freeStrings(1, permissions);
         return;
     }
     ConvierteModo(mode, permissions);
@@ -172,13 +231,17 @@ void printLong(char * file, struct stat attr)
     printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
     //se añade un espacio para añadir el link en caso de necesitarlo
 
-    free(permissions);
-    permissions = NULL;
+    freeStrings(1, permissions);
 }
 
 void printLink(const char *file) 
 {
-    char *link_path = malloc(MAX_PROMPT*sizeof(char*));
+    char *link_path = MALLOC;
+    if (link_path == NULL)
+    {
+        printf("Error al asignar memoria.");
+        return;
+    }
     ssize_t length = readlink(file, link_path, sizeof(link_path) - 1);
 
     if (length != -1) 
@@ -188,8 +251,7 @@ void printLink(const char *file)
     }
     //si no es link no imprime nada
 
-    free(link_path);
-    link_path = NULL;
+    freeStrings(1, link_path);
 }
 
 void printAcc(const char *file, struct stat attr)
@@ -257,4 +319,54 @@ bool includesString(char * string, char ** strings)
     int i;
     for (i = 0; strings[i]!=NULL; i++) if (!strcmp(string, strings[i])) return true;
     return false;
+}
+
+void printDirElements(const char * dir, struct dirent *entry)
+{
+    DIR *current_dir = opendir(dir);
+
+    if (current_dir == NULL)
+    {
+        printf("Error al asignar memoria.");
+        return;
+    }
+
+    while ((entry = readdir(dir)))  printf("%s\n", entry->d_name);
+
+    closedir(current_dir);
+}
+
+void printDirElementsRB(const char * _dir, struct dirent *entry)
+{
+    //se guarda en dir la entrada
+    DIR *dir = opendir(_dir);
+
+    if (dir == NULL)
+    {
+        printf("Error al asignar memoria.");
+        return;
+    }
+
+    //se imprime el directorio de la entrada
+    printf("%s", dir);
+
+    //se guarda en un struct determinados valores del directorio de entrada
+    while ((entry = readdir(dir)))  
+    {
+        //si la entrada es el directorio actual o el padre solo
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 || strcmp(entry->d_name, "..")!=0)
+        {
+            char subroute = MALLOC;
+            if (subroute == NULL)
+            {
+                printf("Error al asignar memoria.");
+                return;
+            }
+            snprintf(subroute, sizeof(subroute), "%s/%s", dir, entry->d_name);
+            printDirElementsRB(dir, subroute);
+        }
+        else printf("%s/%s\n", dir, entry->d_name);
+    }
+
+    closedir(dir);
 }
