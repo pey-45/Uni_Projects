@@ -519,7 +519,7 @@ void f_stat(char ** command)
 
     freeMatrix(2, files, args);
 }
-/*
+
 void f_list(char ** command)
 {
     if (command[1]==NULL)
@@ -571,10 +571,12 @@ void f_list(char ** command)
             if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
             else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
             else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            else if (!strcmp(command[i], "-reca") && !includesString("reca", args)) strcpy(args[breakpoint++], "reca");
+            else if (!strcmp(command[i], "-recb") && !includesString("recb", args)) strcpy(args[breakpoint++], "recb");
             else
             {
                 //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                freeStrings(1, args[breakpoint])
+                freeStrings(1, args[breakpoint]);
                 args[breakpoint] = NULL;
             }
         }       
@@ -591,8 +593,14 @@ void f_list(char ** command)
             strcpy(dirs[dirs_pos], command[i]);
         }
     }
+
+    if (getPos("reca", args) < getPos("recb", args))
+    ...
+    else if (getPos("reca", args) > getPos("recb", args)) //si son iguales es que ninguno esta
+    ..
+    else
 }
-*/
+
 
 void processCommand(char ** command, tList * command_history, tList * open_files)
 {

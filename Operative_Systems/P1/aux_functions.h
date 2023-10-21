@@ -16,3 +16,8 @@ void printAcc(const char * file, struct stat attr);
 void printFew(const char * file, struct stat attr);
 char * ConvierteModo (mode_t m, char * permisos);
 bool includesString(char * string, char ** strings);
+void printAsStat(char * dir, char ** args, struct dirent *entry);
+void printDirElements(const char *_dir, struct dirent *entry, char ** args, bool hid);
+void printDirElementsRB(const char *_dir, struct dirent *entry, char ** args, bool hid);
+void printDirElementsRA(const char *_dir, struct dirent *entry, char ** args, bool hid);
+int getPos(char * string, char ** strings);

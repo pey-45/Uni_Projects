@@ -1,4 +1,5 @@
 #include "aux_functions.h"
+#include "functions.h"
 
 void freeStrings(int n, ...)
 {
@@ -321,52 +322,139 @@ bool includesString(char * string, char ** strings)
     return false;
 }
 
-void printDirElements(const char * dir, struct dirent *entry)
+bool isDir(const char *dir) 
 {
-    DIR *current_dir = opendir(dir);
-
-    if (current_dir == NULL)
-    {
-        printf("Error al asignar memoria.");
-        return;
-    }
-
-    while ((entry = readdir(dir)))  printf("%s\n", entry->d_name);
-
-    closedir(current_dir);
+    struct stat info;
+    //si no se puede hacer stat se obvia que no es un directorio, si no se comprueba con S_ISDIR
+    return !stat(dir, &info)? S_ISDIR(info.st_mode):0;
 }
 
-void printDirElementsRB(const char * _dir, struct dirent *entry)
+void printAsStat(char * dir, char ** args, struct dirent *entry)
 {
-    //se guarda en dir la entrada
-    DIR *dir = opendir(_dir);
+    char *command = MALLOC;
+    char **full_command = MALLOC_PTR;
 
-    if (dir == NULL)
+    strcpy(command, "stat ");
+
+    if (includesString("long", args)) strcat(command, "-long ");
+    else if (includesString("acc", args)) strcat(command, "-acc ");
+    else if (includesString("acc", args)) strcat(command, "-link ");
+
+    strcat(command, entry->d_name);
+
+    TrocearCadena(command, full_command);
+
+    f_stat(command);
+}
+
+void printDirElements(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+{
+    //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada
+    DIR *dir = opendir(dir);
+    if (dir == NULL) 
     {
-        printf("Error al asignar memoria.");
+        perror("Error al abrir el directorio");
         return;
     }
 
-    //se imprime el directorio de la entrada
-    printf("%s", dir);
+    //va imprimiendo uno por uno los elementos del directorio, entrando a un subdirectorio y recorriendo este si asi se necesitara
+    while ((entry = readdir(dir)) != NULL)  printAsStat(entry->d_name, args, entry);
 
-    //se guarda en un struct determinados valores del directorio de entrada
-    while ((entry = readdir(dir)))  
+    closedir(dir);
+}
+
+//se imprimen 
+void printDirElementsRB(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+{
+    char *aux = MALLOC;
+    //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada 
+    DIR *dir = opendir(_dir);
+    if (dir == NULL) 
     {
-        //si la entrada es el directorio actual o el padre solo
-        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 || strcmp(entry->d_name, "..")!=0)
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    //se imprime el directorio padre
+    printAsStat(_dir, args, entry);
+
+    //mientras que se pueda leer el directorio
+    while ((entry = readdir(dir)) != NULL) 
+    {
+        //si se trata de un directorio
+        if (entry->d_type == DT_DIR) 
         {
-            char subroute = MALLOC;
-            if (subroute == NULL)
+            //y no el actual o padre
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) 
             {
-                printf("Error al asignar memoria.");
-                return;
+                char *subroute = MALLOC;
+                //se guarda en subroute el subdirectorio
+                snprintf(subroute, sizeof(subroute), "%s/%s", _dir, entry->d_name);
+                //y se imprimen sus elementos
+                printDirElementsRB(subroute, entry, args, hid);
+
+                freeStrings(1, subroute);
             }
-            snprintf(subroute, sizeof(subroute), "%s/%s", dir, entry->d_name);
-            printDirElementsRB(dir, subroute);
+        } 
+        //si no es un directorio, con hid se imprime siempre, si hid es falso se imprime solo si no es oculto
+        else if (entry->d_name[0]!='.' || hid)
+        {
+            strcpy(aux, _dir);
+            strcat(aux, "/");
+            strcat(aux, entry->d_name);
+            printAsStat(aux, args, entry);
+            
         }
-        else printf("%s/%s\n", dir, entry->d_name);
     }
 
     closedir(dir);
+}
+
+void printDirElementsRA(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+{
+    char *aux = MALLOC;
+
+    DIR *dir = opendir(_dir);
+
+    if (dir == NULL) 
+    {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    //mientras que se pueda leer el directorio
+    while ((entry = readdir(dir)) != NULL) 
+    {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) 
+        {
+            char *subroute = MALLOC;
+            //se guarda en subroute el subdirectorio
+            snprintf(subroute, sizeof(subroute), "%s/%s", _dir, entry->d_name);
+            //si la subruta es un directorio se imprimen sus elementos
+            if (isDir(subroute)) printDirElementsRA(subroute, entry, entry, hid);
+            //si no es un directorio, con hid se imprime siempre, si hid es falso se imprime solo si no es oculto
+            else if (entry->d_name[0]!='.' || hid) 
+            {
+                strcpy(aux, _dir);
+                strcat(aux, "/");
+                strcat(aux, entry->d_name);
+                printAsStat(aux, args, entry);
+            }
+
+            freeStrings(1, subroute);
+        }
+    }
+
+    printAsStat(_dir, args, entry);
+
+    closedir(dir);
+}
+
+int getPos(char * string, char ** strings)
+{
+    int i;
+    
+    for (i = 0; strings[i]!=NULL && strcmp(strings[i], string)!=0; i++);
+
+    return i;
 }
