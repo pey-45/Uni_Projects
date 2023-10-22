@@ -1,6 +1,6 @@
 #include "aux_functions.h"
-#include "functions.h"
 
+//liberar strings
 void freeStrings(int n, ...)
 {
     va_list args;
@@ -20,7 +20,9 @@ void freeStrings(int n, ...)
     va_end(args);
 }
 
-void freeMatrix(int n, ...)
+//liberar arrays de strings cuyos elementos no apuntan a ninguna cadena anteriormente liberada
+//en otras palabras, para los cuales no tienen elementos o han sido procesados por TrocearCadena
+void freeMatrixAllElements(int n, ...)
 {
     va_list args;
     va_start(args, n);
@@ -37,6 +39,27 @@ void freeMatrix(int n, ...)
                 aux[j] = NULL;
             }
             free(aux);
+            aux = NULL;
+        }
+    }
+
+    va_end(args);
+}
+
+//libera arrays de strings
+void freeMatrix(int n, ...)
+{
+    va_list args;
+    va_start(args, n);
+    int i;
+
+    for (i = 0; i < n; i++)
+    {
+        char **aux = va_arg(args, char**);
+        if (aux!=NULL)
+        {
+            free(aux);
+            aux = NULL;
         }
     }
 
@@ -188,12 +211,11 @@ char LetraTF (mode_t m)
      }
 }
 
-void printLong(char * file, struct stat attr)
+void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list)
 {
     int year, month, day, hour, min;
     nlink_t n_link;
     ino_t n_ino;
-    mode_t mode;
     char *permissions = malloc(12*sizeof(char*)); //no hace falta mas
     if (permissions == NULL)
     {
@@ -203,40 +225,6 @@ void printLong(char * file, struct stat attr)
     off_t size;
     struct passwd *prop;
     struct group *group;
-    
-    if (!lstat(file, &attr))
-    {
-        time_t timestamp = attr.st_mtime;
-        struct tm *timeinfo = localtime(&timestamp);
-        n_link = attr.st_nlink;
-        n_ino = attr.st_ino;
-        year = timeinfo->tm_year;
-        month = timeinfo->tm_mon;
-        day = timeinfo->tm_mday;
-        hour = timeinfo->tm_hour;
-        min = timeinfo->tm_min;
-        mode = attr.st_mode;
-        size = attr.st_size;
-        prop = getpwuid(attr.st_uid);
-        group = getgrgid(attr.st_gid);
-    }
-    else
-    {
-        perror("No se ha podido hacer lstat");
-        freeStrings(1, permissions);
-        return;
-    }
-    ConvierteModo(mode, permissions);
-
-
-    printf("%d/%02d/%02d-%02d:%02d  %lu (%lu) %s %s %s %d %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions, (int)size, file);
-    //se añade un espacio para añadir el link en caso de necesitarlo
-
-    freeStrings(1, permissions);
-}
-
-void printLink(const char *file) 
-{
     char *link_path = MALLOC;
     if (link_path == NULL)
     {
@@ -244,20 +232,8 @@ void printLink(const char *file)
         return;
     }
     ssize_t length = readlink(file, link_path, sizeof(link_path) - 1);
+    if (length != -1) link_path[length] = '\0'; 
 
-    if (length != -1) 
-    {
-        link_path[length] = '\0'; 
-        printf("%s", link_path);
-    }
-    //si no es link no imprime nada
-
-    freeStrings(1, link_path);
-}
-
-void printAcc(const char *file, struct stat attr)
-{
-    int year, month, day, hour, min;
     if (!lstat(file, &attr))
     {
         time_t timestamp = attr.st_mtime;
@@ -267,29 +243,24 @@ void printAcc(const char *file, struct stat attr)
         day = timeinfo->tm_mday;
         hour = timeinfo->tm_hour;
         min = timeinfo->tm_min;
-    }
-    else
-    {
-        perror("No se ha podido hacer lstat");
-        return;
-    }
-
-    printf("%d/%02d/%02d-%02d:%02d", 1900+year, month+1, day, hour, min);
-    //se añade un espacio para añadir el link en caso de necesitarlo
-}
-
-void printFew(const char * file, struct stat attr)
-{
-    off_t size;
-    if (!lstat(file, &attr))
+        n_link = attr.st_nlink;
+        n_ino = attr.st_ino;
         size = attr.st_size;
+        prop = getpwuid(attr.st_uid);
+        group = getgrgid(attr.st_gid);
+    }
     else
     {
         perror("No se ha podido hacer lstat");
         return;
     }
 
-    printf("%d %s", (int)size, file);
+    //si hay long se imprime long, si hay acc y long se imprime long, si no hay parametros se imprime solo el tamaño y el nombre.
+    //el printf del final esta hecho para que siempre se imprima el tamaño y el nombre pero el link solo cuando toca
+    if (!strcmp(print_mode, "long")) printf("%d/%02d/%02d-%02d:%02d   %lu (%lu)    %s    %s %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions);
+    else if (!strcmp(print_mode, "acc")) printf("%d/%02d/%02d-%02d:%02d", 1900+year, month+1, day, hour, min);
+
+    printf("    %d %s    %s", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
 }
 
 char * ConvierteModo (mode_t m, char *permisos)
@@ -322,139 +293,252 @@ bool includesString(char * string, char ** strings)
     return false;
 }
 
-bool isDir(const char *dir) 
+//no podemos incluir la libreria functions.h dado que se crearian redefiniciones indeseadas
+//se pasa true a las funciones ya que esta funcion está hecha para f_list
+void aux_stat(char ** command)
 {
-    struct stat info;
-    //si no se puede hacer stat se obvia que no es un directorio, si no se comprueba con S_ISDIR
-    return !stat(dir, &info)? S_ISDIR(info.st_mode):0;
+    struct stat attr;
+    int i;
+    //reservo memoria para las listas de archivos y argumentos
+    char *file = MALLOC, **args = MALLOC_PTR;
+    if (file == NULL || args == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeMatrix(1, args);
+        freeStrings(1, file);
+        return;
+    }
+
+    //inicializo sus elementos como nulos
+    for (i = 0; i < MAX_PROMPT; i++) args[i] = NULL;
+
+    bool in_files = 0;
+    int breakpoint = 0;
+
+    for (i = 1; command[i]!=NULL; i++)
+    {
+        //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = 1;
+
+        if (!in_files)
+        {
+            //se inicializa la posicion en la que se guardará el argumento
+            args[breakpoint] = MALLOC;
+            if (args[breakpoint]==NULL)
+            {
+                perror("Error al asignar memoria.");
+                freeMatrixAllElements(1, args);
+                freeStrings(1, file);
+                return;
+            }
+            args[breakpoint][0] = '\0'; //para evitar fallos con el strcmp
+
+            //se guarda cuales de los parametros se han pasado
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            else
+            {
+                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
+                freeStrings(1, args[breakpoint]);
+                args[breakpoint] = NULL;
+            }
+        }       
+        else file = command[i];
+    }
+
+    if (includesString("long", args))
+    {
+        if (stat(file, &attr) == 0) 
+        {
+            printf(" ");
+            printStat(file, attr, "long", includesString("link", args), true);
+                
+        }
+    }
+    else if (includesString("acc", args))
+    {
+        if (stat(file, &attr) == 0) 
+        {
+            printf(" ");
+            printStat(file, attr, "acc", includesString("link", args), true);
+        }
+    }
+    else if (includesString("link", args))
+    {
+        if (stat(file, &attr) == 0)
+        {
+            printStat(file, attr, "link", true, true);
+            printf("\n");
+        }
+    }
+    else
+    {
+        if (stat(file, &attr) == 0) 
+        {
+            printStat(file, attr, "few", includesString("acc", args), true);
+            printf("\n");
+        }
+    }
+
+    freeMatrixAllElements(1, args);
+    freeStrings(1, file);
 }
 
-void printAsStat(char * dir, char ** args, struct dirent *entry)
+void printAsStat(char * dir, char ** args)
 {
-    char *command = MALLOC;
-    char **full_command = MALLOC_PTR;
+    char *command = MALLOC, **full_command = MALLOC_PTR;
+    if (command == NULL || full_command == NULL)
+    {
+        printf("Error al asignar memoria.");
+        freeStrings(1, command);
+        freeMatrix(1, full_command);
+        return;
+    }
 
     strcpy(command, "stat ");
 
     if (includesString("long", args)) strcat(command, "-long ");
-    else if (includesString("acc", args)) strcat(command, "-acc ");
-    else if (includesString("acc", args)) strcat(command, "-link ");
+    if (includesString("acc", args)) strcat(command, "-acc ");
+    if (includesString("link", args)) strcat(command, "-link ");
 
-    strcat(command, entry->d_name);
+    strcat(command, dir);
 
     TrocearCadena(command, full_command);
 
-    f_stat(command);
+    aux_stat(full_command);
+
+    freeStrings(1, command);
+    freeMatrix(1, full_command);
 }
 
-void printDirElements(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+void printDirElements(char * _dir, char ** args, char *mode, bool hid) 
 {
+    char *subroute = MALLOC;
+    struct dirent *entry;
     //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada
-    DIR *dir = opendir(dir);
+    DIR *dir = opendir(_dir);
+
     if (dir == NULL) 
     {
-        perror("Error al abrir el directorio");
+        perror("Error al abrir el directorio.");
         return;
     }
 
-    //va imprimiendo uno por uno los elementos del directorio, entrando a un subdirectorio y recorriendo este si asi se necesitara
-    while ((entry = readdir(dir)) != NULL)  printAsStat(entry->d_name, args, entry);
+    else if (!strcmp(mode, "before"))
+    {
+        while ((entry = readdir(dir)) != NULL) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
+        {
+            snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+            printDirElementsRB(subroute, args, hid);
+        }
+
+        rewinddir(dir);
+        printf("************%s\n", _dir);
+        //luego listo todos los elementos del directorio
+        while ((entry = readdir(dir)) != NULL) if (entry->d_name[0]!='.' || hid) 
+        {
+            snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+            printAsStat(subroute, args);
+        }
+    }
+    else if (!strcmp(mode, "after"))
+    {
+        printf("************%s\n", _dir);
+        //primero listo todos los elementos del directorio
+        while ((entry = readdir(dir)) != NULL) if (entry->d_name[0]!='.' || hid)
+        {
+            snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+            printAsStat(subroute, args);
+        } 
+
+        //vuelvo a recorrer el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
+        rewinddir(dir);
+        while ((entry = readdir(dir)) != NULL) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
+        {
+            snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+            printDirElementsRA(subroute, args, hid);
+        }
+    }
+    else
+    {
+        printf("************%s\n", _dir);
+        //va imprimiendo uno por uno los elementos del directorio, entrando a un subdirectorio y recorriendo este si asi se necesitara
+        while ((entry = readdir(dir)) != NULL) if (entry->d_name[0]!='.' || hid) printAsStat(entry->d_name, args);
+    }
 
     closedir(dir);
 }
 
 //se imprimen 
-void printDirElementsRB(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+void printDirElementsRB(char * _dir, char ** args, bool hid) 
 {
-    char *aux = MALLOC;
+    char *subroute = MALLOC;
+    struct dirent *entry;
     //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada 
     DIR *dir = opendir(_dir);
+
     if (dir == NULL) 
     {
-        perror("Error al abrir el directorio");
+        perror("Error al abrir el directorio.");
         return;
     }
 
-    //se imprime el directorio padre
-    printAsStat(_dir, args, entry);
-
-    //mientras que se pueda leer el directorio
-    while ((entry = readdir(dir)) != NULL) 
+    //primero recorro el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
+    while ((entry = readdir(dir)) != NULL) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
     {
-        //si se trata de un directorio
-        if (entry->d_type == DT_DIR) 
-        {
-            //y no el actual o padre
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) 
-            {
-                char *subroute = MALLOC;
-                //se guarda en subroute el subdirectorio
-                snprintf(subroute, sizeof(subroute), "%s/%s", _dir, entry->d_name);
-                //y se imprimen sus elementos
-                printDirElementsRB(subroute, entry, args, hid);
-
-                freeStrings(1, subroute);
-            }
-        } 
-        //si no es un directorio, con hid se imprime siempre, si hid es falso se imprime solo si no es oculto
-        else if (entry->d_name[0]!='.' || hid)
-        {
-            strcpy(aux, _dir);
-            strcat(aux, "/");
-            strcat(aux, entry->d_name);
-            printAsStat(aux, args, entry);
-            
-        }
+        snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+        printDirElementsRB(subroute, args, hid);
     }
 
+    rewinddir(dir);
+    printf("************%s\n", _dir);
+    //luego listo todos los elementos del directorio
+    while ((entry = readdir(dir)) != NULL) if (entry->d_name[0]!='.' || hid) 
+    {
+        snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+        printAsStat(subroute, args);
+    }
+
+    freeStrings(1, subroute);
     closedir(dir);
 }
 
-void printDirElementsRA(const char *_dir, struct dirent *entry, char ** args, bool hid) 
+void printDirElementsRA(char * _dir, char ** args, bool hid) 
 {
-    char *aux = MALLOC;
-
+    char *subroute = MALLOC;
+    struct dirent *entry;
+    //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada 
     DIR *dir = opendir(_dir);
 
     if (dir == NULL) 
     {
-        perror("Error al abrir el directorio");
+        perror("Error al abrir el directorio.");
         return;
     }
 
-    //mientras que se pueda leer el directorio
-    while ((entry = readdir(dir)) != NULL) 
+    printf("************%s\n", _dir);
+    //primero listo todos los elementos del directorio
+    while ((entry = readdir(dir)) != NULL) if (entry->d_name[0]!='.' || hid)
     {
-        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) 
-        {
-            char *subroute = MALLOC;
-            //se guarda en subroute el subdirectorio
-            snprintf(subroute, sizeof(subroute), "%s/%s", _dir, entry->d_name);
-            //si la subruta es un directorio se imprimen sus elementos
-            if (isDir(subroute)) printDirElementsRA(subroute, entry, entry, hid);
-            //si no es un directorio, con hid se imprime siempre, si hid es falso se imprime solo si no es oculto
-            else if (entry->d_name[0]!='.' || hid) 
-            {
-                strcpy(aux, _dir);
-                strcat(aux, "/");
-                strcat(aux, entry->d_name);
-                printAsStat(aux, args, entry);
-            }
+        snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+        printAsStat(subroute, args);
+    } 
 
-            freeStrings(1, subroute);
-        }
+    //vuelvo a recorrer el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
+    rewinddir(dir);
+    while ((entry = readdir(dir)) != NULL) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
+    {
+        snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
+        printDirElementsRA(subroute, args, hid);
     }
 
-    printAsStat(_dir, args, entry);
-
+    freeStrings(1, subroute);
     closedir(dir);
 }
 
-int getPos(char * string, char ** strings)
+char *getLastNamePath(char *dir)
 {
-    int i;
-    
-    for (i = 0; strings[i]!=NULL && strcmp(strings[i], string)!=0; i++);
-
-    return i;
+    char *last_slash = strrchr(dir, '/');
+    return last_slash != NULL? last_slash + 1:dir;
 }
