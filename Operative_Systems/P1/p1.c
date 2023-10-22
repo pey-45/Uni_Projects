@@ -15,12 +15,12 @@ int main()
 	createEmptyList(&open_files);
 
 	//se añaden los elementos por defecto a la lista de archivos abiertos
-	insertItem("Descriptor: 0 -> entrada estandar O_RDWR", LNULL, &open_files);
-	insertItem("Descriptor: 1 -> salida estandar O_RDWR", LNULL, &open_files);
-	insertItem("Descriptor: 2 -> error estandar O_RDWR", LNULL, &open_files);
+	insertItem("Descriptor: 0 -> entrada estandar O_RDWR", NULL, &open_files);
+	insertItem("Descriptor: 1 -> salida estandar O_RDWR", NULL, &open_files);
+	insertItem("Descriptor: 2 -> error estandar O_RDWR", NULL, &open_files);
 	
 	//obtencion de nombre de usuario y nodename para formato de input
-	if (username == NULL)
+	if (!username)
 	{
     	perror("No se pudo obtener el nombre de usuario.\n");
 		f_quit(&command_history, &open_files);
@@ -31,7 +31,7 @@ int main()
 	for(ever)
 	{
 		//obtencion de directorio actual para formato de input
-		if (getcwd(dir, MAX_PROMPT)==0)
+		if (!getcwd(dir, MAX_PROMPT))
 		{
     		perror("No se pudo obtener el directorio actual.\n");
 			f_quit(&command_history, &open_files);
@@ -47,7 +47,7 @@ int main()
 			//se elimina el salto de linea
 			command[strlen(command)-1] = '\0';
 			//se inserta el comando en el historial de comandos
-			insertItem(command, LNULL, &command_history);
+			insertItem(command, NULL, &command_history);
 			//se trocea la cadena y se procesa como array de cadenas
 			TrocearCadena(command, full_command);
 			processCommand(full_command, &command_history, &open_files);

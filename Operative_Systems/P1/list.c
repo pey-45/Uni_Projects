@@ -1,28 +1,23 @@
 #include "list.h"
 
-bool isEmptyList(tList L) { return (L == LNULL); }
+bool isEmptyList(tList L) { return !L; }
 
-void createEmptyList(tList *L) { *L = LNULL; }
+void createEmptyList(tList *L) { *L = NULL; }
 
-bool createNode(tPosL *p)
-{
-    *p = malloc(sizeof(struct tNode));
-    return *p != LNULL;
-}
+bool createNode(tPosL *p) { return (*p = malloc(sizeof(struct tNode)));}
 
 bool insertItem(tItemL d, tPosL p, tList *L)
 {
     tPosL q, r;
-    if (!createNode(&q))return false;
+    if (!createNode(&q)) return false;
     else
     {
         strcpy(q->data, d);
-        q->next = LNULL;
-        if (isEmptyList(*L))
-            *L = q;
-        else if (p == LNULL)
+        q->next = NULL;
+        if (isEmptyList(*L)) *L = q;
+        else if (!p)
         {
-            for (r = *L; r->next != LNULL; r = r->next);
+            for (r = *L; r->next; r = r->next);
             r->next = q;
         }
         else if (p == *L)
@@ -47,7 +42,7 @@ tPosL findItem(tItemL d, tList L)
 {
     tPosL p;
 
-    for (p = L; (p != LNULL) && (p->data != d); p = p->next);
+    for (p = L; p && (p->data != d); p = p->next);
     return p;
 }
 
@@ -59,7 +54,7 @@ tPosL last(tList L)
 {
     tPosL p;
 
-    for (p = L; p->next != LNULL; p = p->next);
+    for (p = L; p->next; p = p->next);
     return p;
 }
 
@@ -67,7 +62,7 @@ tPosL previous(tPosL p, tList L)
 {
     tPosL q;
 
-    if (p == L) return LNULL;
+    if (p == L) return NULL;
     else
     {
         for (q = L; q->next != p; q = q->next);
@@ -81,14 +76,11 @@ void deleteAtPosition(tPosL p, tList *L)
 {
     tPosL q;
 
-    if (p == *L)
+    if (p == *L) *L = (*L)->next;
+    else if (!p->next)
     {
-        *L = (*L)->next;
-    }
-    else if (p->next == LNULL)
-    {
-        for (q = *L; q->next->next != LNULL; q = q->next);
-        q->next = LNULL;
+        for (q = *L; q->next->next != NULL; q = q->next);
+        q->next = NULL;
     }
     else
     {
@@ -124,10 +116,10 @@ bool copyList(tList L, tList *M)
     if (!isEmptyList(L))
     {
         p = L;
-        while ((p != LNULL) && (createNode(&r)))
+        while (p && (createNode(&r)))
         {
             strcpy(r->data, p->data);
-            r->next = LNULL;
+            r->next = NULL;
 
             if (p == L)
             {
@@ -142,7 +134,7 @@ bool copyList(tList L, tList *M)
             p = p->next;
         }
 
-        if (p != LNULL)
+        if (p)
         {
             result = false;
             deleteList(M);
@@ -157,13 +149,8 @@ int listLength(tList L)
 {
   	int index = 1;
   	tPosL i;
-  	for (i = L; i->next!=LNULL; i = i->next)
-		++index;
-  	return i!=LNULL? index:0;
+  	for (i = L; i->next; i = i->next) index++;
+  	return i? index:0;
 }
 
-void printItem(tPosL p) 
-{ 
-	if (p!=LNULL)
-    printf("%s", p->data);
-}
+void printItem(tPosL p) { if (p) printf("%s", p->data); }

@@ -15,7 +15,6 @@
 #include <limits.h>
 #include <stdarg.h>
 
-#define LNULL NULL
 #define MAX_PROMPT 16384
 #define MALLOC_PTR malloc(MAX_PROMPT*sizeof(char*))
 #define MALLOC malloc(MAX_PROMPT*sizeof(char))
