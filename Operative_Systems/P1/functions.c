@@ -566,12 +566,46 @@ void f_list(char ** command)
         return;
     }
 
-    if (recAorB == 'B') for (i = 0; i <= dirs_pos; i++) printDirElements(dirs[i], args, recAorB, hid);
-    else if (recAorB == 'A') for (i = 0; i <= dirs_pos; i++) printDirElements(dirs[i], args, recAorB, hid);
-    else for (i = 0; i <= dirs_pos; i++) printDirElements(dirs[i], args, '\0', hid);
+    if (recAorB == 'B') for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
+    else if (recAorB == 'A') for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
+    else for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, '\0', hid, false);
     
 
     freeMatrixAllElements(2, dirs, args);
+}
+
+void f_delete(char ** command)
+{
+    if (!command[1])
+    {
+        printCurrentDir();
+        return;
+    }
+
+    int i;
+    for (i = 1; command[i]; i++) if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
+}
+
+void f_deltree(char ** command)
+{
+    if (!command[1]) 
+    {
+        printCurrentDir();
+        return;
+    }
+
+    DIR *dir;
+    struct dirent *entry;
+    char ** empty = MALLOC_PTR;
+    empty[0] = MALLOC;
+    empty[0][0] = '\0';
+
+    int i;
+    for (i = 1; command[i]; i++) if ((dir = opendir(command[i])) && (entry = readdir(dir)) && entry->d_type == DT_DIR) 
+    {
+        listDirElements(command[i], empty, 'B', false, true);
+        if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+    }
 }
 
 void processCommand(char ** command, tList * command_history, tList * open_files)
@@ -596,7 +630,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "create")) f_create(command, open_files);
     else if (!strcmp(command[0], "stat")) f_stat(command);
     else if (!strcmp(command[0], "list")) f_list(command);
-    else if (!strcmp(command[0], "delete")) return;
-    else if (!strcmp(command[0], "deltree")) return;
+    else if (!strcmp(command[0], "delete")) f_delete(command);
+    else if (!strcmp(command[0], "deltree")) f_deltree(command);
     else f_invalid();
 }

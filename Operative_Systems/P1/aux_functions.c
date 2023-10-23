@@ -266,7 +266,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     if (!strcmp(print_mode, "long")) printf("%d/%02d/%02d-%02d:%02d   %lu (%lu)    %s    %s %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions);
     else if (!strcmp(print_mode, "acc")) printf("%d/%02d/%02d-%02d:%02d", 1900+year, month+1, day, hour, min);
 
-    printf("    %d %s    %s\n", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
+    printf("%8d  %s    %s\n", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
 
     freeStrings(2, permissions, link_path);
 }
@@ -352,7 +352,7 @@ void aux_stat(char ** command)
                 args[breakpoint] = NULL;
             }
         }       
-        else file = command[i];
+        else strcpy(file, command[i]);
     }
 
     if (includesString("long", args) && !stat(file, &attr)) printStat(file, attr, "long", includesString("link", args), true);
@@ -391,7 +391,7 @@ void printAsStat(char * dir, char ** args)
     freeMatrix(1, full_command);
 }
 
-void printDirElements(char * _dir, char ** args, char mode, bool hid) 
+void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltree) 
 {
     char *subroute = MALLOC;
     struct dirent *entry;
@@ -401,6 +401,7 @@ void printDirElements(char * _dir, char ** args, char mode, bool hid)
     if (!dir) 
     {
         perror("Error al abrir el directorio.");
+        freeStrings(1, subroute);
         return;
     }
 
@@ -409,16 +410,21 @@ void printDirElements(char * _dir, char ** args, char mode, bool hid)
         while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
-            printDirElements(subroute, args, mode, hid);
+            listDirElements(subroute, args, mode, hid, deltree);
         }
 
         rewinddir(dir);
-        printf("************%s\n", _dir);
+        if (!deltree) printf("************%s\n", _dir);
         //luego listo todos los elementos del directorio
         while ((entry = readdir(dir))) if (entry->d_name[0]!='.' || hid) 
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
-            printAsStat(subroute, args);
+            if (!deltree) printAsStat(subroute, args);
+            else 
+            {
+                if (entry->d_type == DT_DIR) {if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));}
+                else if (remove(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+            }
         }
     }
     else if (mode == 'A')
@@ -436,7 +442,7 @@ void printDirElements(char * _dir, char ** args, char mode, bool hid)
         while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
-            printDirElements(subroute, args, mode, hid);
+            listDirElements(subroute, args, mode, hid, deltree);
         }
     }
     else

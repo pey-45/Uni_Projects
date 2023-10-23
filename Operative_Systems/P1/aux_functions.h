@@ -14,5 +14,5 @@ char LetraTF (mode_t m);
 void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list);
 char *ConvierteModo (mode_t m, char * permisos);
 bool includesString(char * string, char ** strings);
-void printDirElements(char *_dir,  char ** args, char mode, bool hid);
+void listDirElements(char *_dir,  char ** args, char mode, bool hid, bool deltree);
 char *getLastNamePath(char * dir);

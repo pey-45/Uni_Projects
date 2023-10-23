@@ -14,6 +14,7 @@
 #include <grp.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <errno.h>
 
 #define MAX_PROMPT 16384
 #define MALLOC_PTR malloc(MAX_PROMPT*sizeof(char*))
