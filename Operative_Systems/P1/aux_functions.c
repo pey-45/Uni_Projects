@@ -220,9 +220,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     off_t size;
     struct passwd *prop;
     struct group *group;
-    initializeString(link_path);
-    ssize_t length = readlink(file, link_path, sizeof(link_path) - 1);
-    if (length != -1) link_path[length] = '\0'; 
+    readlink(file, link_path, MAX_PROMPT);
 
     if (!lstat(file, &attr))
     {
@@ -254,7 +252,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     if (!strcmp(print_mode, "long")) printf("%d/%02d/%02d-%02d:%02d   %lu (%lu)    %s    %s %s", 1900+year, month+1, day, hour, min, n_link, n_ino, prop->pw_name, group->gr_name, permissions);
     else if (!strcmp(print_mode, "acc")) printf("%d/%02d/%02d-%02d:%02d", 1900+year, month+1, day, hour, min);
 
-    printf("%8d  %s    %s\n", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
+    printf("%8d  %s         %s\n", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
 
     freeStrings(2, permissions, link_path);
 }
@@ -409,7 +407,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
             if (!deltree) printAsStat(subroute, args);
             else 
             {
-                if (entry->d_type == DT_DIR) {if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));}
+                if (isDir(subroute)) { if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));}
                 else if (remove(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
             }
         }
@@ -450,3 +448,11 @@ char *getLastNamePath(char *dir)
 }
 
 void initializeString(char * string) { string[0] = '\0'; }
+
+bool isDir(char * dir)
+{
+    struct stat attr;
+    if (lstat(dir, &attr)) return false;
+
+    return S_ISDIR(attr.st_mode);
+}

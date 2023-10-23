@@ -200,7 +200,7 @@ void f_dup(char ** command, tList * open_files)
         //si no hay argumentos se imprime la lista de archivos abiertos
         if (!command[1]) printOpenListByDF(*open_files);
         //si es un entero positivo, por descarte el fallo es de asignacion de memoria
-        else if (isDigitString(command[1])) printf("Error al asignar memoria");
+        else if (isDigitString(command[1])) perror("Error al asignar memoria");
 
         freeStrings(4, output, p, mode, aux);
         freeMatrix(1, aux_strings);
@@ -529,33 +529,34 @@ void f_list(char ** command)
 
 void f_delete(char ** command)
 {
+    struct stat attr;
+    char sure, aux;
+    int i;
+
     if (!command[1]) 
     {
         printCurrentDir();
         return;
     }
 
-    char sure, aux;
-    printf("Estás a punto de eliminar archivos de forma permanente, deseas continuar [y/n]?");
-    scanf("%c", &sure);
-    scanf("%c", &aux);
-    if (sure!='y' && sure !='Y') return;
-
-    DIR *dir;
-    struct dirent *entry;
-    char ** empty = MALLOC_PTR;
-    empty[0] = MALLOC;
-    empty[0][0] = '\0';
-
-    int i;
-    for (i = 1; command[i]; i++) 
+    if (!strcmp(command[0], "deltree"))
     {
-        if ((dir = opendir(command[i])) && (entry = readdir(dir)) && entry->d_type == DT_DIR) 
+        printf("Esta es una acción destructiva, deseas continuar [y/n]? ");
+        scanf("%c", &sure);
+        scanf("%c", &aux);
+        if (sure!='y' && sure !='Y') return;
+    }
+    
+
+    for (i = 1; command[i]; i++)
+    {
+        if (lstat(command[i], &attr)) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
+        else if (S_ISDIR(attr.st_mode)) 
         {
-            if (strcmp(command[0], "deltree")) listDirElements(command[i], empty, 'B', false, true);
-            if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+            if (!strcmp(command[0], "deltree")) listDirElements(command[i], NULL, 'B', false, true);
+            if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
         }
-        else if (remove(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+        else if (remove(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
     }
 }
 

@@ -1,4 +1,4 @@
-create pruebas
+chdir pruebas
 
 authors
 authors -l
@@ -8,10 +8,8 @@ authors dsfs sf
 
 chdir
 chdir ..
-chdir
+chdir pruebas
 chdir issd
-chdir P0
-chdir
 
 date
 date dsf
@@ -58,31 +56,32 @@ help authors
 help help
 help fsdf
 
-chdir pruebas
-
 create 
 create -f
 create -g
 create a.pdf
-create dirprueba
 create -f f          NO DEBE APARECER LO DE ENTRADA
 create -f f.pdf       TAMPOCO, CREAR IF EN OPEN u otra cosa
-
-chdir ..
-
-AÑADIR ARCHIVOS DE PRUEBA Y PROBAR
 
 stat
 stat a.pdf                          
 stat -long -link -acc
 stat -long f.pdf
-stat -long -link cpp            
+stat -long -link cpp            COMPROBAR CORRECCION
 stat -long cpp
 stat -long -acc cpp
-stat -acc -link long
+stat -acc -link long               DIFF
 
-chdir pruebas
+
+--------------------------------------------
+CREACION DE DIRECTORIOS Y ARCHIVOS DE PRUEBA
+--------------------------------------------
 create -f a.txt
+create -f a1.txt
+create -f a2.txt
+create -f a3.txt
+create -f a4.txt
+create -f a5.txt
 create dir1
 create dir2
 create empty
@@ -105,21 +104,18 @@ list -recb .
 list -reca -recb .
 list -reca -long -link .
 list -hid -long -acc .
-list aesssdsxdfe
+list aesssdsxdfe                      DIFF
 
 delete
-delete .
+delete .                             
 delete dsffsfs
-delete dir1
+delete dir1                     
 delete empty
 delete a.txt
+delete a1.txt a2.txt a3.txt
 
 deltree
-
-IMPORTANTISIMO MOVERSE A OTRO DIRECTORIO SI NO SE BORRA ABSOLUTAMENTE TODO!!!!!!!!!!!!!!
-
-chdir pruebas
-deltree .
+deltree dir1
 
 quit
 
