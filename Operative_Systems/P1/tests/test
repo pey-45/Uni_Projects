@@ -43,7 +43,7 @@ close dsfs     ERROR EN REF
 dup 5
 dup
 dup ewfs
-dup 33         AÑADIR PERROR
+dup 33      
 
 listopen
 listopen fsfds
@@ -51,26 +51,30 @@ listopen fsfds
 infosys
 infosys sdf
 
-help                     AÑADIR TODOS
+help                    
 help authors
 help help
+help help help
+help help hola
 help fsdf
 
 create 
 create -f
 create -g
 create a.pdf
-create -f f          NO DEBE APARECER LO DE ENTRADA
-create -f f.pdf       TAMPOCO, CREAR IF EN OPEN u otra cosa
+create b.pdf c.pdf
+create -f b.pdf c.pdf
+create -f f         
+create -f f.pdf   
 
 stat
 stat a.pdf                          
 stat -long -link -acc
-stat -long f.pdf
-stat -long -link cpp            COMPROBAR CORRECCION
+stat -long a.pdf f.pdf
+stat -long -link cpp       
 stat -long cpp
 stat -long -acc cpp
-stat -acc -link long               DIFF
+stat -acc -link long          
 
 
 --------------------------------------------
@@ -99,15 +103,16 @@ chdir ..
 
 list
 list .
+list . ..
 list -reca .
 list -recb .
 list -reca -recb .
 list -reca -long -link .
 list -hid -long -acc .
-list aesssdsxdfe                      DIFF
+list aesssdsxdfe     
 
 delete
-delete .                             
+delete .           
 delete dsffsfs
 delete dir1                     
 delete empty
@@ -116,6 +121,7 @@ delete a1.txt a2.txt a3.txt
 
 deltree
 deltree dir1
+deltree .
 
 quit
 

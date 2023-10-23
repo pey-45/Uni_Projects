@@ -74,7 +74,7 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     if (!command[1] || !isDigitString(command[1]) || !string || !strings) 
     {
         if (!command[1]) printHistUntil(listLength(*command_history), *command_history);
-        else if (isDigitString(command[1])) printf("Error al asignar memoria.");
+        else if (isDigitString(command[1])) printf("Error al asignar memoria");
         freeStrings(1, string);
         freeMatrix(1, strings);
         return;
@@ -100,7 +100,7 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     freeMatrix(1, strings);
 }
 
-void f_open(char ** command, tList * open_files)
+void f_open(char ** command, tList * open_files, bool show_message)
 {
     int i, df, mode = 0;
     char *mode_c = MALLOC, *output = MALLOC;
@@ -163,7 +163,7 @@ void f_open(char ** command, tList * open_files)
     {
         sprintf(output, "Descriptor: %d -> %s %s", df, command[1], mode_c);
         insertItem(output, NULL, open_files);
-        printf("Anadida entrada %d a la tabla ficheros abiertos\n", df);
+        if (show_message) printf("Anadida entrada %d a la tabla ficheros abiertos\n", df);
     }
 
     freeStrings(2, mode_c, output);
@@ -215,7 +215,7 @@ void f_dup(char ** command, tList * open_files)
     if (pos) strcpy(aux, getItem(pos));
     else
     {
-        printf("Imposible duplicar descriptor\n");
+        perror("Imposible duplicar descriptor\n");
         freeStrings(4, output, p, mode, aux);
         freeMatrix(1, aux_strings);
         return;
@@ -280,21 +280,36 @@ void f_infosys()
 void f_help(char ** command)
 {
     //se muestra la ayuda correspondiente a cada comando
-    if (!command[1]) printf("'help [cmd|-lt|-T topic]' ayuda sobre comandos\n\t\tComandos disponibles:\nauthors pid chdir date time hist command open close dup listopen infosys help quit exit bye\n");
+    if (!command[1]) printf("help [cmd|-lt|-T topic]: ayuda sobre comandos\n\tComandos disponibles:\nauthors pid chdir " 
+    "date time hist command open close dup listopen infosys help quit exit bye create stat list delete deltree\n");
     else if (!strcmp(command[1], "authors")) printf("authors [-n|-l]: Muestra los nombres y/o logins de los autores\n");
     else if (!strcmp(command[1], "pid")) printf("pid [-p]: Muestra el pid del shell o de su proceso padre\n");
     else if (!strcmp(command[1], "chdir")) printf("chdir [dir]: Cambia (o muestra) el directorio actual del shell\n");
     else if (!strcmp(command[1], "date")) printf("date: Muestra la fecha actual\n");
     else if (!strcmp(command[1], "time")) printf("time: Muestra la hora actual\n");
-    else if (!strcmp(command[1], "hist")) printf("hist [-c|-N]: Muestra (o borra) el historico de comandos\n\t-N: muestra los N primeros\n\t-c: borra el historico\n");
+    else if (!strcmp(command[1], "hist")) printf("hist [-c|-N]: Muestra (o borra) el historico de comandos\n\t-N: muestra los "
+    "N primeros\n\t-c: borra el historico\n");
     else if (!strcmp(command[1], "command")) printf("command [-N]: Repite el comando N (del historico)\n");
-    else if (!strcmp(command[1], "open")) printf("open fich m1 m2...:	Abre el fichero fich. y lo anade a la lista de ficheros abiertos del shell\nm1, m2..es el modo de apertura (or bit a bit de los siguientes)\n\tcr: O_CREAT\tap: O_APPEND\n\tex: O_EXCL\tro: O_RDONLY\n\trw: O_RDWR\two: O_WRONLY\n\ttr: O_TRUNC\n");
-    else if (!strcmp(command[1], "close")) printf("close df: Cierra el descriptor df y elimina el correspondiente fichero de la lista de ficheros abiertos\n");
-    else if (!strcmp(command[1], "dup")) printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos\n");
+    else if (!strcmp(command[1], "open")) printf("open fich m1 m2...:	Abre el fichero fich. y lo anade a la lista de ficheros "
+    "abiertos del shell\nm1, m2..es el modo de apertura (or bit a bit de los siguientes)\n\tcr: O_CREAT\tap: O_APPEND\n\tex: O_EXCL"
+    "\tro: O_RDONLY\n\trw: O_RDWR\two: O_WRONLY\n\ttr: O_TRUNC\n");
+    else if (!strcmp(command[1], "close")) printf("close df: Cierra el descriptor df y elimina el correspondiente fichero de la "
+    "lista de ficheros abiertos\n");
+    else if (!strcmp(command[1], "dup")) printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista "
+    "ficheros abiertos\n");
     else if (!strcmp(command[1], "listopen")) printf("listopen [n]: Lista los ficheros abiertos (al menos n) del shell\n");
     else if (!strcmp(command[1], "infosys")) printf("infosys: Muestra informacion de la maquina donde corre el shell\n");
-    else if (!strcmp(command[1], "help")) printf("help [cmd|-lt|-T]: Muestra ayuda sobre los comandos\n\t-lt: lista topics de ayuda\n\t-T topic: lista comandos sobre ese topic\n\tcmd: info sobre el comando cmd\n");
-    else if (!strcmp(command[1], "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye")) printf("%s: Termina la ejecucion del shell\n", command[1]);
+    else if (!strcmp(command[1], "help")) printf("help [cmd|-lt|-T]: Muestra ayuda sobre los comandos\n\t-lt: lista topics de ayuda"
+    "\n\t-T topic: lista comandos sobre ese topic\n\tcmd: info sobre el comando cmd\n");
+    else if (!strcmp(command[1], "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye")) printf("%s: Termina la "
+    "ejecucion del shell\n", command[1]);
+    else if (!strcmp(command[1], "create")) printf("create [-f] [name]: Crea un directorio o un fichero (-f)\n");
+    else if (!strcmp(command[1], "stat")) printf("stat [-long][-link][-acc] [name1] [name2] [...]:	lista ficheros\n\t-long: listado largo"
+	"\n\t-acc: acesstime\n\t-link: si es enlace simbolico, el path contenido\n");
+    else if (!strcmp(command[1], "list")) printf("list [-reca] [-recb] [-hid][-long][-link][-acc] [n1] [n2] [...]: lista contenidos de directorios"
+	"\n\t-hid: incluye los ficheros ocultos\n\t-recb: recursivo (antes)\n\t-reca: recursivo (despues)\n\tresto parametros como stat\n");
+    else if (!strcmp(command[1], "delete")) printf("delete [name1] [name2] [...]: Borra ficheros o directorios vacios\n");
+    else if (!strcmp(command[1], "deltree")) printf("deltree [name1] [name2] [...]: Borra ficheros o directorios no vacios recursivamente\n");
     else printf("%s no encontrado\n", command[1]);
 }
 
@@ -313,7 +328,7 @@ void f_create(char ** command, tList * open_files)
     char *string = MALLOC, **strings = MALLOC_PTR;
     if (!string || !strings)
     {
-        printf("Error al asignar memoria.");
+        printf("Error al asignar memoria");
         freeStrings(1, string);
         freeMatrix(1, strings);
         return;
@@ -324,7 +339,7 @@ void f_create(char ** command, tList * open_files)
     {
         sprintf(string, "open %s cr", command[2]);
         TrocearCadena(string, strings);
-        f_open(strings, open_files);
+        f_open(strings, open_files, false);
     }
     else if (mkdir(command[1], 0777)!=0) perror("Imposible crear directorio");
     
@@ -340,7 +355,7 @@ void f_stat(char ** command)
     char **files = MALLOC_PTR, **args = MALLOC_PTR;
     if (!files || !args)
     {
-        printf("Error al asignar memoria.");
+        printf("Error al asignar memoria");
         freeMatrix(2, files, args);
         return;
     }
@@ -366,7 +381,7 @@ void f_stat(char ** command)
             args[args_pos] = MALLOC;
             if (!args[args_pos])
             {
-                perror("Error al asignar memoria.");
+                perror("Error al asignar memoria");
                 freeMatrixAllElements(2, files, args);
                 return;
             }
@@ -388,7 +403,7 @@ void f_stat(char ** command)
             files[files_pos] = MALLOC;
             if (!files[files_pos])
             {
-                perror("Error al asignar memoria.");
+                perror("Error al asignar memoria");
                 freeMatrixAllElements(2, files, args);
                 return;
             }
@@ -408,7 +423,7 @@ void f_stat(char ** command)
         for (i = 0; i < files_pos; i++)
         {
             if (!stat(files[i], &attr)) printStat(files[i], attr, "long", includesString("link", args), false);
-            else perror("No se ha podido hacer lstat");
+            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
         }
     }
     else if (includesString("acc", args))
@@ -416,7 +431,7 @@ void f_stat(char ** command)
         for (i = 0; i < files_pos; i++)
         {
             if (!stat(files[i], &attr)) printStat(files[i], attr, "acc", includesString("link", args), false);
-            else perror("No se ha podido hacer lstat");
+            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
         }
     }
     else if (includesString("link", args))
@@ -424,7 +439,7 @@ void f_stat(char ** command)
         for (i = 0; i < files_pos; i++)
         {
             if (!stat(files[i], &attr)) printStat(files[i], attr, "link", true, false);
-            else perror("No se ha podido hacer lstat");
+            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
         }
     }
     else
@@ -432,7 +447,7 @@ void f_stat(char ** command)
         for (i = 0; i < files_pos; i++)
         {
             if (!stat(files[i], &attr)) printStat(files[i], attr, "few", includesString("link", args), false);
-            else perror("No se ha podido hacer lstat");
+            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
         }
     }
 
@@ -455,7 +470,7 @@ void f_list(char ** command)
 
     if (!dirs || !args)
     {
-        perror("Error al asignar memoria.");
+        perror("Error al asignar memoria");
         freeMatrix(2, dirs, args);
         return;
     }
@@ -470,7 +485,8 @@ void f_list(char ** command)
     for (i = 1; command[i]; i++)
     {
         //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0 && strcmp(command[i], "-reca")!=0 && strcmp(command[i], "-recb")!=0 && strcmp(command[i], "-hid")!=0) in_dirs = 1;
+        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0 && strcmp(command[i], "-reca")!=0 
+            && strcmp(command[i], "-recb")!=0 && strcmp(command[i], "-hid")!=0) in_dirs = 1;
 
         if (!in_dirs)
         {
@@ -479,7 +495,7 @@ void f_list(char ** command)
             args[args_pos][0] = '\0';
             if (!args[args_pos])
             {
-                perror("Error al asignar memoria.");
+                perror("Error al asignar memoria");
                 freeMatrixAllElements(2, dirs, args);
                 return;
             }
@@ -504,7 +520,7 @@ void f_list(char ** command)
             dirs[dirs_pos] = MALLOC;
             if (!dirs[dirs_pos])
             {
-                perror("Error al asignar memoria.");
+                perror("Error al asignar memoria");
                 freeMatrixAllElements(2, dirs, args);
                 return;
             }
@@ -571,7 +587,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "time")) f_time();
     else if (!strcmp(command[0], "hist")) f_hist(command, command_history);
     else if (!strcmp(command[0], "command")) f_command(command, command_history, open_files);
-    else if (!strcmp(command[0], "open")) f_open(command, open_files);
+    else if (!strcmp(command[0], "open")) f_open(command, open_files, true);
     else if (!strcmp(command[0], "close")) f_close(command, open_files);
     else if (!strcmp(command[0], "dup")) f_dup(command, open_files);
     else if (!strcmp(command[0], "listopen")) f_listopen(command, *open_files);

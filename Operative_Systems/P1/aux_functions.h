@@ -17,4 +17,3 @@ bool includesString(char * string, char ** strings);
 void listDirElements(char *_dir,  char ** args, char mode, bool hid, bool deltree);
 char *getLastNamePath(char * dir);
 void initializeString(char * string);
-bool isDir(char * dir);
