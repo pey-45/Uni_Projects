@@ -601,10 +601,14 @@ void f_deltree(char ** command)
     empty[0][0] = '\0';
 
     int i;
-    for (i = 1; command[i]; i++) if ((dir = opendir(command[i])) && (entry = readdir(dir)) && entry->d_type == DT_DIR) 
+    for (i = 1; command[i]; i++) 
     {
-        listDirElements(command[i], empty, 'B', false, true);
-        if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+        if ((dir = opendir(command[i])) && (entry = readdir(dir)) && entry->d_type == DT_DIR) 
+        {
+            listDirElements(command[i], empty, 'B', false, true);
+            if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
+        }
+        else if (remove(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
     }
 }
 
