@@ -1,2 +1,125 @@
-c
+create pruebas
+
+authors
+authors -l
+authors -n
+authorssfd
+authors dsfs sf
+
+chdir
+chdir ..
+chdir
+chdir issd
+chdir P0
+chdir
+
+date
+date dsf
+
+time
+time dfssd
+
+hist
+hist -5
+hist -c
+hist dfs
+hist
+
+command
+command edsf  DIFF
+command 16
+command 16 sds
+command
+
+open file.txt
+open file.txt cr
+open file.txt rw
+open
+open fsdf
+
+close 4
+close
+close 33
+close dsfs     ERROR EN REF
+
+dup 5
+dup
+dup ewfs
+dup 33         AÑADIR PERROR
+
+listopen
+listopen fsfds
+
+infosys
+infosys sdf
+
+help                     AÑADIR TODOS
+help authors
+help help
+help fsdf
+
+chdir pruebas
+
+create 
+create -f
+create -g
+create a.pdf
+create dirprueba
+create -f f          NO DEBE APARECER LO DE ENTRADA
+create -f f.pdf       TAMPOCO, CREAR IF EN OPEN u otra cosa
+
+chdir ..
+
+AÑADIR ARCHIVOS DE PRUEBA Y PROBAR
+
+stat
+stat a.pdf                          
+stat -long -link -acc
+stat -long f.pdf
+stat -long -link cpp            
+stat -long cpp
+stat -long -acc cpp
+stat -acc -link long
+
+chdir pruebas
+create -f a.txt
+create dir1
+create dir2
+create empty
+chdir dir1
+create dir3
+create -f b.txt
+chdir dir3
+create -f c.txt
+chdir ..
+chdir ..
+chdir dir2
+create -f d.txt
+chdir ..
+
+
+list
+list .
+list -reca .
+list -recb .
+list -reca -recb .
+list -reca -long -link .
+list -hid -long -acc .
+list aesssdsxdfe
+
+delete
+delete .
+delete dsffsfs
+delete dir1
+delete empty
+delete a.txt
+
+deltree
+
+IMPORTANTISIMO MOVERSE A OTRO DIRECTORIO SI NO SE BORRA ABSOLUTAMENTE TODO!!!!!!!!!!!!!!
+
+chdir pruebas
+deltree .
+
 quit
+

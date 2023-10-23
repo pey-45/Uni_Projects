@@ -94,8 +94,7 @@ tPosL getPosByDF(int df, tList L)
     {
         strcpy(string, getItem(i));
         TrocearCadena(string, strings);
-        if (atoi(strings[1])==df)
-            break;
+        if (atoi(strings[1])==df) break;
     }
 
     freeStrings(1, string);
@@ -106,7 +105,7 @@ tPosL getPosByDF(int df, tList L)
 
 void printOpenListByDF(tList L)
 {
-    int index = 0, last_index;
+    int i, last_index;
     char *string = MALLOC, **strings = MALLOC_PTR;
     if (!string || !strings)
     {
@@ -115,7 +114,7 @@ void printOpenListByDF(tList L)
         freeMatrix(1, strings);
         return;
     }
-    tPosL i;
+    tPosL pos;
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
     strcpy(string, getItem(last(L)));
@@ -123,15 +122,14 @@ void printOpenListByDF(tList L)
     last_index = atoi(strings[1]);
 
     //recorre la lista hasta el último elemento imprimiendo los elementos que encuentra
-    while(index<=last_index)
+    for (i = 0; i <= last_index; i++)
     {
-        i = getPosByDF(index, L);
-        if (i)
+        pos = getPosByDF(i, L);
+        if (pos)
         {
-            printItem(i);
+            printItem(pos);
             printf("\n");
         }
-        ++index;
     }
 
     freeStrings(1, string);
@@ -140,45 +138,40 @@ void printOpenListByDF(tList L)
 
 void printOpenListByDFUntil(int limit, tList L)
 {
-    int index = 0;
-    tPosL i;
+    int i;
+    tPosL pos;
 
     //recorre la lista hasta el límite imprimiendo los elementos que encuentra
-    while(index<limit)
+    for (i = 0; i < limit; i++)
     {
-        i = getPosByDF(index, L);
-        if (i)
+        pos = getPosByDF(i, L);
+        if (pos)
         {
-            printItem(i);
+            printItem(pos);
             printf("\n");
         }
-        ++index;
     }
 }
 
 void printHistUntil(int limit, tList L)
 {
-    tPosL i;
-    int index = 0;
+    tPosL pos;
+    int i = 0;
 
     //imprime los elementos del historial en un determinado formato
-    for (i = first(L); i && index<limit; i = next(i))
+    for (pos = first(L); pos && i++<limit; pos = next(pos))
     {
-        printf("%d->", index);
-        printItem(i);
+        printf("%d->", i);
+        printItem(pos);
         printf("\n");
-        ++index;
     }
 }
 
 bool isDigitString(char * string)
 {
+    if (!string) return false;
     //devuelve si el string consta únicamente de digitos
-    for (int i = 0; i < (int)strlen(string); ++i)
-    {
-        if (!isdigit(string[i]))
-            return false;
-    }
+    for (int i = 0; i < (int)strlen(string); i++) if (!isdigit(string[i])) return false;
     return true;
 }
 
@@ -211,29 +204,23 @@ char LetraTF (mode_t m)
      }
 }
 
-void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list)
+void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list /*determina si queremos imprimir los archivos con la ruta entera o solo el nombre*/)
 {
     int year, month, day, hour, min;
     nlink_t n_link;
     mode_t mode;
     ino_t n_ino;
-    char *permissions = malloc(12*sizeof(char*)); //no hace falta mas
-    if (!permissions)
+    char *permissions = malloc(12*sizeof(char*)), *link_path = MALLOC;
+    if (!permissions || !link_path)
     {
         printf("Error al asignar memoria.");
+        freeStrings(2, permissions, link_path);
         return;
     }
     off_t size;
     struct passwd *prop;
     struct group *group;
-    char *link_path = MALLOC;
-    strcpy(link_path, "");
-    if (!link_path)
-    {
-        printf("Error al asignar memoria.");
-        freeStrings(2, link_path, permissions);
-        return;
-    }
+    initializeString(link_path);
     ssize_t length = readlink(file, link_path, sizeof(link_path) - 1);
     if (length != -1) link_path[length] = '\0'; 
 
@@ -259,6 +246,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
         freeStrings(2, permissions, link_path);
         return;
     }
+
     ConvierteModo(mode, permissions);
 
     //si hay long se imprime long, si hay acc y long se imprime long, si no hay parametros se imprime solo el tamaño y el nombre.
@@ -273,7 +261,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
 
 char * ConvierteModo (mode_t m, char *permisos)
 {
-    strcpy (permisos,"---------- ");
+    strcpy(permisos,"---------- ");
     
     permisos[0]=LetraTF(m);
     if (m&S_IRUSR) permisos[1]='r';    //propietario
@@ -306,7 +294,7 @@ bool includesString(char * string, char ** strings)
 void aux_stat(char ** command)
 {
     struct stat attr;
-    int i;
+    int i, args_pos = 0;
     //reservo memoria para las listas de archivos y argumentos
     char *file = MALLOC, **args = MALLOC_PTR;
     if (!file || !args)
@@ -321,7 +309,6 @@ void aux_stat(char ** command)
     for (i = 0; i < MAX_PROMPT; i++) args[i] = NULL;
 
     bool in_files = 0;
-    int breakpoint = 0;
 
     for (i = 1; command[i]; i++)
     {
@@ -331,25 +318,25 @@ void aux_stat(char ** command)
         if (!in_files)
         {
             //se inicializa la posicion en la que se guardará el argumento
-            args[breakpoint] = MALLOC;
-            if (!args[breakpoint])
+            args[args_pos] = MALLOC;
+            if (!args[args_pos])
             {
                 perror("Error al asignar memoria.");
                 freeMatrixAllElements(1, args);
                 freeStrings(1, file);
                 return;
             }
-            args[breakpoint][0] = '\0'; //para evitar fallos con el strcmp
+            initializeString(args[args_pos]); //para evitar fallos con el strcmp
 
             //se guarda cuales de los parametros se han pasado
-            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint++], "long");
-            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint++], "link");
-            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint++], "acc");
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[args_pos++], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos++], "link");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos++], "acc");
             else
             {
-                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                freeStrings(1, args[breakpoint]);
-                args[breakpoint] = NULL;
+                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa args_pos
+                freeStrings(1, args[args_pos]);
+                args[args_pos] = NULL;
             }
         }       
         else strcpy(file, command[i]);
@@ -391,23 +378,23 @@ void printAsStat(char * dir, char ** args)
     freeMatrix(1, full_command);
 }
 
-void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltree) 
+void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltree /*deltree utiliza esta funcion para eliminar un directorio no vacío*/) 
 {
     char *subroute = MALLOC;
     struct dirent *entry;
     //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada
     DIR *dir = opendir(_dir);
 
-    if (!dir) 
+    if (!dir || !subroute) 
     {
-        perror("Error al abrir el directorio.");
+        !dir? perror("Error al abrir el directorio."):printf("Error al asignar memoria");
         freeStrings(1, subroute);
         return;
     }
 
-    else if (mode == 'B')
+    if (mode == 'B')
     {
-        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
+        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
             listDirElements(subroute, args, mode, hid, deltree);
@@ -439,7 +426,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
 
         //vuelvo a recorrer el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
         rewinddir(dir);
-        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".")!=0 && strcmp(entry->d_name, "..")!=0)
+        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
             listDirElements(subroute, args, mode, hid, deltree);
@@ -461,3 +448,5 @@ char *getLastNamePath(char *dir)
     char *last_slash = strrchr(dir, '/');
     return last_slash? last_slash + 1:dir;
 }
+
+void initializeString(char * string) { string[0] = '\0'; }

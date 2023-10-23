@@ -13,10 +13,9 @@ void f_authors(char ** command)
 
 void f_pid(char ** command)
 {
-    //si hay argumentos y ese argumento es -p imprime el pid del padre del shell
-    if (command[1] && !strcmp(command[1], "-p")) printf("Pid del padre del shell: %ld\n", (long)getppid());
-    //en cualquier otro caso imprime el pid del shell
-    else printf("Pid de shell: %ld\n", (long)getpid());
+    //si hay argumentos y ese argumento es -p imprime el pid del padre del shell, en cualquier otro caso imprime el pid del shell
+    bool p = command[1] && !strcmp(command[1], "-p");
+    printf("Pid del %sshell: %ld\n", p? "padre del ":"", p? (long)getppid():(long)getpid());
 }
 
 void f_chdir(char ** command)
@@ -35,10 +34,8 @@ void f_date()
     time(&t);
     struct tm *local = localtime(&t);
 
-    //se asignan el anio, mes y día a las variables y se imprimen
-    int y = local->tm_year+1900, m = local->tm_mon+1, d = local->tm_mday;
-
-    printf("%02d/%02d/%d\n", d, m, y);
+    //se imprimen el anio, mes y día 
+    printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);
 }
 
 void f_time()
@@ -48,10 +45,8 @@ void f_time()
     time(&t);
     struct tm *local = localtime(&t);
 
-    //se asignan el anio, mes y día a las variables y se imprimen
-    int h = local->tm_hour, m = local->tm_min, s = local->tm_sec;
-
-    printf("%02d:%02d:%02d\n", h, m, s);
+    //se imprimen la hora, minutos y segundos
+    printf("%02d:%02d:%02d\n", local->tm_hour, local->tm_min, local->tm_sec);
 }
 
 void f_hist(char ** command, tList * command_history)
@@ -63,64 +58,36 @@ void f_hist(char ** command, tList * command_history)
         return;
     }
     
-    bool error = false;
-
     //si el argumento es -c se borra la lista
     if (!strcmp(command[1], "-c")) deleteList(command_history);
     //si no hay que comprobar si lo que hay despues es un numero
-    else if (command[1][0]=='-')
-    {
-        char* number = MALLOC;
-        if (!number)
-        {
-            perror("Error al asignar memoria");
-            return;
-        }
-
-        //se copia en (string) number el digito (ejemplo, si el argumento es -34, se guarda 34)
-        strncpy(number, command[1]+1, strlen(command[1]));
-
-        //compruebo que number se corresponde con un entero positivo
-        if (!isDigitString(number)) error = true;
-
-        /*si hay algun caracter distinto simplemente da error, si no se 
-        imprime hasta el numero dado*/
-        if (!error) printHistUntil(atoi(number), *command_history);
-
-        freeStrings(1, number);
-    }
+    else if (command[1][0]=='-' && isDigitString(command[1]+1 /*sin el guion*/)) printHistUntil(atoi(command[1]+1), *command_history);
 }
 
-void f_command(char ** command, tList * command_history, tList * open_files) {
-    //si no hay argumentos se imprime el historial
-    if (!command[1]) 
-    {
-        printHistUntil(listLength(*command_history), *command_history);
-        return;
-    }
-
-    //se comprueba que el primer argumento se corresponde con un entero positivo
-    if (!isDigitString(command[1])) return;
-
-    int goal_index = atoi(command[1]), current_index = 0;
+void f_command(char ** command, tList * command_history, tList * open_files) 
+{
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings)
+    int goal_index, current_index = 0;
+    tPosL i;
+
+    //si no hay argumentos se imprime el historial
+    if (!command[1] || !isDigitString(command[1]) || !string || !strings) 
     {
-        printf("Error al asignar memoria.");
+        if (!command[1]) printHistUntil(listLength(*command_history), *command_history);
+        else if (isDigitString(command[1])) printf("Error al asignar memoria.");
         freeStrings(1, string);
         freeMatrix(1, strings);
         return;
     }
 
-    tPosL i;
+    goal_index = atoi(command[1]);
+
     //se recorre la lista de historial hasta el numero dado o nulo si no se encuentra
     for (i = first(*command_history); i && current_index++ < goal_index; i = next(i));
 
-    //COMPROBAR CAMBIO EN CURRENTINDEX++
-
     //si no se encuentra da error
     if (!i) printf("No hay elemento %s en el histórico\n", command[1]);
-        //si no se ejecuta ese comando
+    //si no se ejecuta ese comando
     else 
     {
         strcpy(string, getItem(i));
@@ -139,22 +106,14 @@ void f_open(char ** command, tList * open_files)
     char *mode_c = MALLOC, *output = MALLOC;
 
     //se comprueba que hay memoria suficiente
-    if (!mode_c || !output)
+    if (!command[1] || !mode_c || !output)
     {
-        printf("Error al asignar memoria");
+        !command[1]? printOpenListByDF(*open_files):printf("Error al asignar memoria");
         freeStrings(2, mode_c, output);
         return;
     }
     //para evitar saltos condicionales dependientes de variables sin inicializar
-    strcpy(mode_c, "");
-
-    //si no hay argumentos se imprime la lista de archivos abiertos
-    if (!command[1])
-    {
-        printOpenListByDF(*open_files);
-        freeStrings(2, mode_c, output);
-        return;
-    }
+    initializeString(mode_c);
 
     //se itera desde el segundo argumento asignando los valores correspondientes
     for (i=2; command[i]; ++i)
@@ -261,8 +220,8 @@ void f_dup(char ** command, tList * open_files)
         freeMatrix(1, aux_strings);
         return;
     }
-    TrocearCadena(aux, aux_strings);
 
+    TrocearCadena(aux, aux_strings);
 
     bool inMode = false;
     //se itera desde el modo comprobando si se tiene que añadir el string al string p o mode
@@ -347,11 +306,7 @@ void f_quit(tList * command_history, tList * open_files)
     exit(0);
 }
 
-void f_invalid()
-{
-    //si el comando no es valido salta error
-    printf("No ejecutado: No such file or directory\n");
-}
+void f_invalid() { perror("No ejecutado"); }
 
 void f_create(char ** command, tList * open_files)
 {
@@ -492,12 +447,11 @@ void f_list(char ** command)
         return;
     } 
 
-    int i, breakpoint = 0;
+    int i, args_pos = 0, dirs_pos = 0;
     char **dirs = MALLOC_PTR, **args = MALLOC_PTR;
     char recAorB = '\0';
     bool hid = false;
     bool in_dirs = 0;
-    int dirs_pos;
 
     if (!dirs || !args)
     {
@@ -521,33 +475,32 @@ void f_list(char ** command)
         if (!in_dirs)
         {
             //se inicializa la posicion en la que se guardará el argumento
-            args[breakpoint] = MALLOC;
-            args[breakpoint][0] = '\0';
-            if (!args[breakpoint])
+            args[args_pos] = MALLOC;
+            args[args_pos][0] = '\0';
+            if (!args[args_pos])
             {
                 perror("Error al asignar memoria.");
                 freeMatrixAllElements(2, dirs, args);
                 return;
             }
             //se guarda cuales de los parametros se han pasado
-            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[breakpoint], "long");
-            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[breakpoint], "link");
-            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[breakpoint], "acc");
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[args_pos], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos], "link");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos], "acc");
             else if (!strcmp(command[i], "-reca")) recAorB = 'A';
             else if (!strcmp(command[i], "-recb")) recAorB = 'B';
             else if (!strcmp(command[i], "-hid")) hid = true;
             else
             {
                 //si se repite un parámetro entre long, acc y link se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                freeStrings(1, args[breakpoint]);
-                args[breakpoint] = NULL;
-                breakpoint --;
+                freeStrings(1, args[args_pos]);
+                args[args_pos] = NULL;
+                args_pos --;
             }
-            breakpoint++;
+            args_pos++;
         }       
         else
         {
-            dirs_pos = i-1-breakpoint;
             dirs[dirs_pos] = MALLOC;
             if (!dirs[dirs_pos])
             {
@@ -555,7 +508,7 @@ void f_list(char ** command)
                 freeMatrixAllElements(2, dirs, args);
                 return;
             }
-            strcpy(dirs[dirs_pos], command[i]);
+            strcpy(dirs[dirs_pos++], command[i]);
         }
     }
 
@@ -566,9 +519,9 @@ void f_list(char ** command)
         return;
     }
 
-    if (recAorB == 'B') for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
-    else if (recAorB == 'A') for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
-    else for (i = 0; i <= dirs_pos; i++) listDirElements(dirs[i], args, '\0', hid, false);
+    if (recAorB == 'B') for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
+    else if (recAorB == 'A') for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
+    else for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, '\0', hid, false);
     
 
     freeMatrixAllElements(2, dirs, args);
@@ -576,23 +529,17 @@ void f_list(char ** command)
 
 void f_delete(char ** command)
 {
-    if (!command[1])
-    {
-        printCurrentDir();
-        return;
-    }
-
-    int i;
-    for (i = 1; command[i]; i++) if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
-}
-
-void f_deltree(char ** command)
-{
     if (!command[1]) 
     {
         printCurrentDir();
         return;
     }
+
+    char sure, aux;
+    printf("Estás a punto de eliminar archivos de forma permanente, deseas continuar [y/n]?");
+    scanf("%c", &sure);
+    scanf("%c", &aux);
+    if (sure!='y' && sure !='Y') return;
 
     DIR *dir;
     struct dirent *entry;
@@ -605,7 +552,7 @@ void f_deltree(char ** command)
     {
         if ((dir = opendir(command[i])) && (entry = readdir(dir)) && entry->d_type == DT_DIR) 
         {
-            listDirElements(command[i], empty, 'B', false, true);
+            if (strcmp(command[0], "deltree")) listDirElements(command[i], empty, 'B', false, true);
             if (rmdir(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
         }
         else if (remove(command[i])) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
@@ -634,7 +581,6 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "create")) f_create(command, open_files);
     else if (!strcmp(command[0], "stat")) f_stat(command);
     else if (!strcmp(command[0], "list")) f_list(command);
-    else if (!strcmp(command[0], "delete")) f_delete(command);
-    else if (!strcmp(command[0], "deltree")) f_deltree(command);
+    else if (!strcmp(command[0], "delete") || !strcmp(command[0], "deltree")) f_delete(command);
     else f_invalid();
 }

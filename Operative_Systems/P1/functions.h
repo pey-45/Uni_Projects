@@ -19,6 +19,5 @@ void f_create(char ** command, tList *open_files);
 void f_stat(char ** command);
 void f_list(char ** command);
 void f_delete(char ** command);
-void f_deltree(char ** command);
 
 void processCommand(char ** command, tList * command_history, tList * open_files);
