@@ -204,7 +204,7 @@ char LetraTF (mode_t m)
      }
 }
 
-//is_from_listdetermina si queremos imprimir los archivos con la ruta entera o solo el nombre
+//is_from_list determina si queremos imprimir los archivos con la ruta entera o solo el nombre
 void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list)
 {
     int year, month, day, hour, min;
@@ -223,6 +223,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     struct group *group;
     initializeString(link_path);
     readlink(file, link_path, MAX_PROMPT);
+    link_path[strlen(link_path)] = '\0';
 
     if (!lstat(file, &attr))
     {
@@ -242,7 +243,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     }
     else
     {
-        perror("No se ha podido hacer lstat");
+        fprintf(stderr, "Error al acceder a %s: %s\n", file, strerror(errno));
         freeStrings(2, permissions, link_path);
         return;
     }

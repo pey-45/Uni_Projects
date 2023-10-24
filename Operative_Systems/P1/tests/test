@@ -3,6 +3,7 @@ chdir pruebas
 authors
 authors -l
 authors -n
+authors -l -n
 authorssfd
 authors dsfs sf
 
@@ -20,11 +21,11 @@ time dfssd
 hist
 hist -5
 hist -c
-hist dfs
+hist dfs          
 hist
 
 command
-command edsf  DIFF
+command edsf           NO INTERESA QUE SEA IGUAL A LA REFERENCIA AQUI
 command 16
 command 16 sds
 command
@@ -51,7 +52,7 @@ listopen fsfds
 infosys
 infosys sdf
 
-help                    
+help                     PONGO LOS QUE LLEVO
 help authors
 help help
 help help help
@@ -62,7 +63,7 @@ create
 create -f
 create -g
 create a.pdf
-create b.pdf c.pdf
+create b.pdf c.pdf                 SE CREA EL PRIMERO Y SE IGNORA LO DEMAS
 create -f b.pdf c.pdf
 create -f f         
 create -f f.pdf   
@@ -71,9 +72,9 @@ stat
 stat a.pdf                          
 stat -long -link -acc
 stat -long a.pdf f.pdf
-stat -long -link cpp       
-stat -long cpp
-stat -long -acc cpp
+stat -long -link ld-linux-x86-64.so.2       
+stat -long ld-linux-x86-64.so.2                   NO ES GRAVE
+stat -long -acc ld-linux-x86-64.so.2
 stat -acc -link long          
 
 

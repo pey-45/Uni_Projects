@@ -62,6 +62,7 @@ void f_hist(char ** command, tList * command_history)
     if (!strcmp(command[1], "-c")) deleteList(command_history);
     //si no hay que comprobar si lo que hay despues es un numero
     else if (command[1][0]=='-' && isDigitString(command[1]+1 /*sin el guion*/)) printHistUntil(atoi(command[1]+1), *command_history);
+    else printHistUntil(listLength(*command_history), *command_history); //por seguir la shell de referencia
 }
 
 void f_command(char ** command, tList * command_history, tList * open_files) 
@@ -157,7 +158,7 @@ void f_open(char ** command, tList * open_files, bool show_message)
     }
 
     //se intenta abrir y no se puede da error
-    if ((df=open(command[1], mode, 0777))==-1) perror("Imposible abrir fichero");
+    if ((df=open(command[1], mode, 0777))==-1) perror(show_message? "Imposible abrir fichero":"Imposible abrir");
     //si no simplemente se abrio y se añade a la lista de ficheros abiertos con su descriptor y modo
     else
     {
@@ -215,7 +216,7 @@ void f_dup(char ** command, tList * open_files)
     if (pos) strcpy(aux, getItem(pos));
     else
     {
-        perror("Imposible duplicar descriptor\n");
+        perror("Imposible duplicar descriptor");
         freeStrings(4, output, p, mode, aux);
         freeMatrix(1, aux_strings);
         return;
