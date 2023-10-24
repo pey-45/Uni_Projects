@@ -421,10 +421,13 @@ void f_stat(char ** command)
 
     for (i = 0; i < files_pos; i++)
     {
-        if (includesString("long", args) && !stat(files[i], &attr)) printStat(files[i], attr, "long", includesString("link", args), false);
-        else if (includesString("acc", args) && !stat(files[i], &attr)) printStat(files[i], attr, "acc", includesString("link", args), false);
-        else if (includesString("link", args) && !stat(files[i], &attr)) printStat(files[i], attr, "link", includesString("link", args), false);
-        else if (!stat(files[i], &attr)) printStat(files[i], attr, "few", includesString("link", args), false);
+        if (!stat(files[i], &attr))
+        {
+            if (includesString("long", args)) printStat(files[i], attr, "long", includesString("link", args), false);
+            else if (includesString("acc", args)) printStat(files[i], attr, "acc", includesString("link", args), false);
+            else if (includesString("link", args)) printStat(files[i], attr, "link", includesString("link", args), false);
+            else printStat(files[i], attr, "few", includesString("link", args), false);
+        }
         else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
     }
 
