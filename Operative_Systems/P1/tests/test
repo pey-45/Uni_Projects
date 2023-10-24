@@ -25,7 +25,7 @@ hist dfs
 hist
 
 command
-command edsf           NO INTERESA QUE SEA IGUAL A LA REFERENCIA AQUI
+command edsf          
 command 16
 command 16 sds
 command
@@ -52,7 +52,7 @@ listopen fsfds
 infosys
 infosys sdf
 
-help                     PONGO LOS QUE LLEVO
+help                 
 help authors
 help help
 help help help
@@ -63,7 +63,7 @@ create
 create -f
 create -g
 create a.pdf
-create b.pdf c.pdf                 SE CREA EL PRIMERO Y SE IGNORA LO DEMAS
+create b.pdf c.pdf                
 create -f b.pdf c.pdf
 create -f f         
 create -f f.pdf   
@@ -73,7 +73,7 @@ stat a.pdf
 stat -long -link -acc
 stat -long a.pdf f.pdf
 stat -long -link ld-linux-x86-64.so.2       
-stat -long ld-linux-x86-64.so.2                   NO ES GRAVE
+stat -long ld-linux-x86-64.so.2                  
 stat -long -acc ld-linux-x86-64.so.2
 stat -acc -link long          
 
@@ -125,4 +125,5 @@ deltree dir1
 deltree .
 
 quit
+
 
