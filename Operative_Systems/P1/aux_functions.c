@@ -322,7 +322,7 @@ void aux_stat(char ** command)
     for (i = 1; command[i]; i++)
     {
         //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = 1;
+        if (strcmp(command[i], "-long") && strcmp(command[i], "-link") && strcmp(command[i], "-acc")) in_files = 1;
 
         if (!in_files)
         {

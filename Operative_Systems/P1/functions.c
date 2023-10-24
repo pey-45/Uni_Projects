@@ -2,13 +2,12 @@
 
 void f_authors(char ** command)
 {
-    //si no tiene argumentos imprime los nombres y logins
-    if (!command[1]) printf("Pablo Manzanares Lopez: pablo.manzanares.lopez@udc.es\nAlejandro Rodriguez Franco: alejandro.rodriguezf@udc.es\n");
     //si tiene de argumento -l imprime los logins
-    else if (!strcmp(command[1], "-l")) printf("pablo.manzanares.lopez@udc.es\nalejandro.rodriguezf@udc.es\n");
+    if (command[1] && !strcmp(command[1], "-l")) printf("pablo.manzanares.lopez@udc.es\nalejandro.rodriguezf@udc.es\n");
     //si tiene de argumento -n imprime los nombres
-    else if (!strcmp(command[1], "-n")) printf("Pablo Manzanares Lopez\nAlejandro Rodriguez Franco\n");
-    //si no no imprime nada
+    else if (command[1] && !strcmp(command[1], "-n")) printf("Pablo Manzanares Lopez\nAlejandro Rodriguez Franco\n");
+    //en cualquier otro caso imprime los nombres y logins
+    else printf("Pablo Manzanares Lopez: pablo.manzanares.lopez@udc.es\nAlejandro Rodriguez Franco: alejandro.rodriguezf@udc.es\n");
 }
 
 void f_pid(char ** command)
@@ -22,23 +21,11 @@ void f_chdir(char ** command)
 {
     //si no hay argumentos imprime el directorio actual
     if (!command[1]) printCurrentDir();
-    /*si el argumento no es un directorio valido salta 
-    error, en cualquier otro caso cambia al directorio dado*/
-    else if (chdir(command[1])!=0) perror("Imposible cambiar directorio");
+    //si el argumento no es un directorio valido salta error, en cualquier otro caso cambia al directorio dado*/
+    else if (chdir(command[1])) perror("Imposible cambiar directorio");
 }
 
-void f_date()
-{
-    //se guarda en el struct local los datos referentes al horario actual
-    time_t t;
-    time(&t);
-    struct tm *local = localtime(&t);
-
-    //se imprimen el anio, mes y día 
-    printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);
-}
-
-void f_time()
+void f_time(char ** command)
 {
     //se guarda en el struct local los datos referentes al horario actual
     time_t t;
@@ -46,7 +33,8 @@ void f_time()
     struct tm *local = localtime(&t);
 
     //se imprimen la hora, minutos y segundos
-    printf("%02d:%02d:%02d\n", local->tm_hour, local->tm_min, local->tm_sec);
+    !strcmp(command[0], "time")? printf("%02d:%02d:%02d\n", local->tm_hour, local->tm_min, local->tm_sec):
+                                 printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);; 
 }
 
 void f_hist(char ** command, tList * command_history)
@@ -342,7 +330,7 @@ void f_create(char ** command, tList * open_files)
         TrocearCadena(string, strings);
         f_open(strings, open_files, false);
     }
-    else if (mkdir(command[1], 0777)!=0) perror("Imposible crear directorio");
+    else if (mkdir(command[1], 0777)) perror("Imposible crear directorio");
     
     freeStrings(1, string);
     freeMatrix(1, strings);
@@ -374,7 +362,7 @@ void f_stat(char ** command)
     for (i = 1; command[i]; i++)
     {
         //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0) in_files = 1;
+        if (strcmp(command[i], "-long") && strcmp(command[i], "-link") && strcmp(command[i], "-acc")) in_files = 1;
 
         if (!in_files)
         {
@@ -465,8 +453,8 @@ void f_list(char ** command)
     for (i = 1; command[i]; i++)
     {
         //si el comando no es ningun argumento válido tod0 lo que haya delante sera considerado un archivo
-        if (strcmp(command[i], "-long")!=0 && strcmp(command[i], "-link")!=0 && strcmp(command[i], "-acc")!=0 && strcmp(command[i], "-reca")!=0 
-            && strcmp(command[i], "-recb")!=0 && strcmp(command[i], "-hid")!=0) in_dirs = 1;
+        if (strcmp(command[i], "-long") && strcmp(command[i], "-link") && strcmp(command[i], "-acc") && strcmp(command[i], "-reca") 
+            && strcmp(command[i], "-recb") && strcmp(command[i], "-hid")) in_dirs = 1;
 
         if (!in_dirs)
         {
@@ -563,8 +551,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     if (!strcmp(command[0], "authors")) f_authors(command);
     else if (!strcmp(command[0], "pid")) f_pid(command);
     else if (!strcmp(command[0], "chdir")) f_chdir(command);
-    else if (!strcmp(command[0], "date")) f_date();
-    else if (!strcmp(command[0], "time")) f_time();
+    else if (!strcmp(command[0], "date") || !strcmp(command[0], "time")) f_time(command);
     else if (!strcmp(command[0], "hist")) f_hist(command, command_history);
     else if (!strcmp(command[0], "command")) f_command(command, command_history, open_files);
     else if (!strcmp(command[0], "open")) f_open(command, open_files, true);
