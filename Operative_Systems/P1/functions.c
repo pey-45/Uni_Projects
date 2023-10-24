@@ -28,11 +28,9 @@ void f_chdir(char ** command)
 void f_time(char ** command)
 {
     //se guarda en el struct local los datos referentes al horario actual
-    time_t t;
-    time(&t);
-    struct tm *local = localtime(&t);
+    time_t t; time(&t); struct tm *local = localtime(&t);
 
-    //se imprimen la hora, minutos y segundos
+    //se imprime la hora o la fecha dependiendo del comando
     !strcmp(command[0], "time")? printf("%02d:%02d:%02d\n", local->tm_hour, local->tm_min, local->tm_sec):
                                  printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);; 
 }
@@ -40,11 +38,7 @@ void f_time(char ** command)
 void f_hist(char ** command, tList * command_history)
 {
     //si no hay argumentos se imprime el historial
-    if (!command[1])
-    {
-        printHistUntil(listLength(*command_history), *command_history);
-        return;
-    }
+    if (!command[1]) { printHistUntil(listLength(*command_history), *command_history); return; }
     
     //si el argumento es -c se borra la lista
     if (!strcmp(command[1], "-c")) deleteList(command_history);
@@ -56,7 +50,7 @@ void f_hist(char ** command, tList * command_history)
 void f_command(char ** command, tList * command_history, tList * open_files) 
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
-    int goal_index, current_index = 0;
+    int current_index = 0;
     tPosL i;
 
     //si no hay argumentos se imprime el historial
@@ -64,29 +58,23 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     {
         if (!command[1]) printHistUntil(listLength(*command_history), *command_history);
         else if (isDigitString(command[1])) printf("Error al asignar memoria");
-        freeStrings(1, string);
-        freeMatrix(1, strings);
-        return;
+        freeStrings(1, string); freeMatrix(1, strings); return;
     }
 
-    goal_index = atoi(command[1]);
-
     //se recorre la lista de historial hasta el numero dado o nulo si no se encuentra
-    for (i = first(*command_history); i && current_index++ < goal_index; i = next(i));
+    for (i = first(*command_history); i && current_index++ < atoi(command[1]); i = next(i));
 
-    //si no se encuentra da error
-    if (!i) printf("No hay elemento %s en el histórico\n", command[1]);
-    //si no se ejecuta ese comando
-    else 
+    //si se encuentra se ejecuta ese comando
+    if (i)
     {
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
         TrocearCadena(string, strings);
         processCommand(strings, command_history, open_files);
-    }
+    } 
+    else printf("No hay elemento %s en el histórico\n", command[1]);
 
-    freeStrings(1, string);
-    freeMatrix(1, strings);
+    freeStrings(1, string); freeMatrix(1, strings);
 }
 
 void f_open(char ** command, tList * open_files, bool show_message)
@@ -98,50 +86,22 @@ void f_open(char ** command, tList * open_files, bool show_message)
     if (!command[1] || !mode_c || !output)
     {
         !command[1]? printOpenListByDF(*open_files):printf("Error al asignar memoria");
-        freeStrings(2, mode_c, output);
-        return;
+        freeStrings(2, mode_c, output); return;
     }
+
     //para evitar saltos condicionales dependientes de variables sin inicializar
     initializeString(mode_c);
 
     //se itera desde el segundo argumento asignando los valores correspondientes
     for (i=2; command[i]; ++i)
     {
-        if (!strcmp(command[i],"cr"))
-        {
-            mode|=O_CREAT;
-            strcpy(mode_c, "O_CREAT");
-        }
-        else if (!strcmp(command[i],"ex"))
-        {
-            mode|=O_EXCL;
-            strcpy(mode_c, "O_EXCL");
-        }
-        else if (!strcmp(command[i],"ro"))
-        {
-            mode|=O_RDONLY;
-            strcpy(mode_c, "O_RDONLY");
-        }
-        else if (!strcmp(command[i],"wo"))
-        {
-            mode|=O_WRONLY;
-            strcpy(mode_c, "O_WRONLY");
-        }
-        else if (!strcmp(command[i],"rw"))
-        {
-            mode|=O_RDWR;
-            strcpy(mode_c, "O_RDWR");
-        }
-        else if (!strcmp(command[i],"ap"))
-        {
-            mode|=O_APPEND;
-            strcpy(mode_c, "O_APPEND");
-        }
-        else if (!strcmp(command[i],"tr"))
-        {
-            mode|=O_TRUNC;
-            strcpy(mode_c, "O_TRUNC");
-        }
+        if      (!strcmp(command[i],"cr")) { mode|=O_CREAT;  strcpy(mode_c, "O_CREAT"); }
+        else if (!strcmp(command[i],"ex")) { mode|=O_CREAT;  strcpy(mode_c, "O_EXCL"); }
+        else if (!strcmp(command[i],"ro")) { mode|=O_RDONLY; strcpy(mode_c, "O_RDONLY"); }
+        else if (!strcmp(command[i],"wo")) { mode|=O_WRONLY; strcpy(mode_c, "O_WRONLY"); }
+        else if (!strcmp(command[i],"rw")) { mode|=O_RDWR;   strcpy(mode_c, "O_RDWR"); }
+        else if (!strcmp(command[i],"ap")) { mode|=O_APPEND; strcpy(mode_c, "O_APPEND"); }
+        else if (!strcmp(command[i],"tr")) { mode|=O_TRUNC;  strcpy(mode_c, "O_TRUNC"); }
         else break;
     }
 
@@ -163,14 +123,8 @@ void f_close (char ** command, tList * open_files)
     int df;
 
     //si no hay argumentos se imprime la lista de archivos abiertos
-    if (!command[1])
-    {
-        printOpenListByDF(*open_files);
-        return;
-    }
-
-    //se comprueba que el primer argumento se corresponde con un entero positivo
-    if (!isDigitString(command[1])) return;
+    //si hay se comprueba que el primer argumento se corresponde con un entero positivo
+    if (!command[1] || !isDigitString(command[1])) { if (!command[1]) printOpenListByDF(*open_files); return; }
 
     //se intenta cerrar y no se puede da error
     if (close(df = atoi(command[1]))==-1) perror("Imposible cerrar descriptor");
@@ -182,7 +136,7 @@ void f_dup(char ** command, tList * open_files)
 {
     int df;
     char *output = MALLOC, *p = MALLOC, *mode = MALLOC, *aux = MALLOC, **aux_strings = MALLOC_PTR;
-    strcpy(p, "");
+    initializeString(p);
 
     if (!output || !p || !mode || !aux || !aux_strings || !command[1] || !isDigitString(command[1]))
     {
@@ -191,9 +145,7 @@ void f_dup(char ** command, tList * open_files)
         //si es un entero positivo, por descarte el fallo es de asignacion de memoria
         else if (isDigitString(command[1])) perror("Error al asignar memoria");
 
-        freeStrings(4, output, p, mode, aux);
-        freeMatrix(1, aux_strings);
-        return;
+        freeStrings(4, output, p, mode, aux); freeMatrix(1, aux_strings); return;
     }
     //el entero positivo se guarda en df
     df = atoi(command[1]);
@@ -202,37 +154,27 @@ void f_dup(char ** command, tList * open_files)
     para separarla en un array de cadenas y manipularlas mejor*/
     tPosL pos = getPosByDF(df, *open_files);
     if (pos) strcpy(aux, getItem(pos));
-    else
-    {
-        perror("Imposible duplicar descriptor");
-        freeStrings(4, output, p, mode, aux);
-        freeMatrix(1, aux_strings);
-        return;
-    }
+    else { perror("Imposible duplicar descriptor"); freeStrings(4, output, p, mode, aux); freeMatrix(1, aux_strings); return; }
 
     TrocearCadena(aux, aux_strings);
 
-    bool inMode = false;
-    //se itera desde el modo comprobando si se tiene que añadir el string al string p o mode
-    //p almacena lo que va dentro del paréntesis, el string desde el archivo hasta el modo sin incluirlo, y mode el modo
+    //se itera desde el nombre del archivo
     for (int i = 3; aux_strings[i]; ++i)
     {
-        if ((!strcmp(aux_strings[i], "O_CREAT")
-             || !strcmp(aux_strings[i], "O_EXCL")
-             || !strcmp(aux_strings[i], "O_RDONLY")
-             || !strcmp(aux_strings[i], "O_WRONLY")
-             || !strcmp(aux_strings[i], "O_RDWR")
-             || !strcmp(aux_strings[i], "O_APPEND")
-             || !strcmp(aux_strings[i], "O_TRUNC"))
-            && i!=3) 
-            inMode = true;
+        //la tercera posicion se tiene que leer como archivo, aunque el string sea uno de los modos
+        //si se lee un modo se copia y se deja de buscar
+        if (i != 3 &&
+           (!strcmp(aux_strings[i], "O_CREAT") ||
+            !strcmp(aux_strings[i], "O_EXCL") ||
+            !strcmp(aux_strings[i], "O_RDONLY") ||
+            !strcmp(aux_strings[i], "O_WRONLY") ||
+            !strcmp(aux_strings[i], "O_RDWR") ||
+            !strcmp(aux_strings[i], "O_APPEND") ||
+            !strcmp(aux_strings[i], "O_TRUNC")))   
+        { strcpy(mode, aux_strings[i]); break; }
 
-        if (!inMode)
-        {
-            strcat(p, aux_strings[i]);
-            strcat(p, " ");
-        }
-        else strcpy(mode, aux_strings[i]);
+
+        strcat(p, aux_strings[i]); strcat(p, " ");
     }
     //se quita el espacio sobrante
     p[strlen(p)-1] = '\0';
@@ -241,28 +183,26 @@ void f_dup(char ** command, tList * open_files)
     sprintf(output, "Descriptor: %d -> dup %d (%s) %s", dup(df), df, p, mode);
     insertItem(output, NULL, open_files);
 
-    freeStrings(4, output, p, mode, aux);
-    freeMatrix(1, aux_strings);
+    freeStrings(4, output, p, mode, aux); freeMatrix(1, aux_strings);
 }
 
 void f_listopen(char ** command, tList open_files)
 {
     //si no hay argumentos se imprime la lista de archivos abiertos
-    if (!command[1]) printOpenListByDF(open_files);
-    else
-    {
+    if (command[1])
+    { 
         /*se comprueba que el primer argumento se corresponde con un entero positivo,
         si lo es se imprime la lista de arhivos abiertos hasta ese numero*/
         if (!isDigitString(command[1])) return;
         printOpenListByDFUntil(atoi(command[1]), open_files);
     }
-}
+    else printOpenListByDF(open_files);
+ }
 
 void f_infosys()
 {
     //se guardan los datos del dispositivo en un struct y se imprimen
-    struct utsname unameData;
-    uname(&unameData);
+    struct utsname unameData; uname(&unameData);
     printf("%s (%s), OS: %s-%s-%s\n", unameData.nodename, unameData.machine, unameData.sysname, unameData.release, unameData.version);
 }
 
@@ -302,26 +242,14 @@ void f_help(char ** command)
     else printf("%s no encontrado\n", command[1]);
 }
 
-void f_quit(tList * command_history, tList * open_files)
-{
-    //se libera la memoria de las listas y se termina el programa;
-    deleteList(command_history);
-    deleteList(open_files);
-    exit(0);
-}
+void f_quit(tList * command_history, tList * open_files) { deleteList(command_history); deleteList(open_files); exit(0); }
 
 void f_invalid() { perror("No ejecutado"); }
 
 void f_create(char ** command, tList * open_files)
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings)
-    {
-        printf("Error al asignar memoria");
-        freeStrings(1, string);
-        freeMatrix(1, strings);
-        return;
-    }
+    if (!string || !strings) { printf("Error al asignar memoria"); freeStrings(1, string); freeMatrix(1, strings); return; }
 
     if (!command[1] || (!strcmp(command[1], "-f") && !command[2])) printCurrentDir();
     else if (!strcmp(command[1], "-f"))
@@ -332,32 +260,21 @@ void f_create(char ** command, tList * open_files)
     }
     else if (mkdir(command[1], 0777)) perror("Imposible crear directorio");
     
-    freeStrings(1, string);
-    freeMatrix(1, strings);
+    freeStrings(1, string); freeMatrix(1, strings);
 }
 
 void f_stat(char ** command)
 {
     struct stat attr;
-    int i;
     //reservo memoria para las listas de archivos y argumentos
     char **files = MALLOC_PTR, **args = MALLOC_PTR;
-    if (!files || !args)
-    {
-        printf("Error al asignar memoria");
-        freeMatrix(2, files, args);
-        return;
-    }
+    bool in_files = 0;
+    int i, args_pos = 0, files_pos = 0;
+
+    if (!files || !args) { printf("Error al asignar memoria"); freeMatrix(2, files, args); return; }
 
     //inicializo sus elementos como nulos
-    for (i = 0; i < MAX_PROMPT; i++)
-    {
-        files[i] = NULL;
-        args[i] = NULL;
-    }
-
-    bool in_files = 0;
-    int args_pos = 0, files_pos = 0;
+    for (i = 0; i < MAX_PROMPT; i++) { files[i] = NULL; args[i] = NULL; }
 
     for (i = 1; command[i]; i++)
     {
@@ -368,44 +285,26 @@ void f_stat(char ** command)
         {
             //se inicializa la posicion en la que se guardará el argumento
             args[args_pos] = MALLOC;
-            if (!args[args_pos])
-            {
-                perror("Error al asignar memoria");
-                freeMatrixAllElements(2, files, args);
-                return;
-            }
-            args[args_pos][0] = '\0'; //para evitar fallos con el strcmp
+            if (!args[args_pos]) { perror("Error al asignar memoria"); freeMatrixAllElements(2, files, args); return; }
+            initializeString(args[args_pos]); //para evitar fallos con el strcmp
 
             //se guarda cuales de los parametros se han pasado
             if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[args_pos++], "long");
             else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos++], "link");
             else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos++], "acc");
-            else
-            {
-                //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                freeStrings(1, args[args_pos]);
-                args[args_pos] = NULL;
-            }
+            //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa args_pos
+            else freeStrings(1, args[args_pos]);
+
         }       
         else
         {
             files[files_pos] = MALLOC;
-            if (!files[files_pos])
-            {
-                perror("Error al asignar memoria");
-                freeMatrixAllElements(2, files, args);
-                return;
-            }
+            if (!files[files_pos]) { perror("Error al asignar memoria"); freeMatrixAllElements(2, files, args); return; }
             strcpy(files[files_pos++], command[i]);
         }
     }
 
-    if (!files[0])
-    {
-        printCurrentDir();
-        freeMatrixAllElements(2, files, args);
-        return;
-    }
+    if (!files[0]) { printCurrentDir(); freeMatrixAllElements(2, files, args); return; }
 
     for (i = 0; i < files_pos; i++)
     {
@@ -424,31 +323,16 @@ void f_stat(char ** command)
 
 void f_list(char ** command)
 {
-    if (!command[1])
-    {
-        printCurrentDir();
-        return;
-    } 
+    if (!command[1]) { printCurrentDir(); return; } 
 
     int i, args_pos = 0, dirs_pos = 0;
-    char **dirs = MALLOC_PTR, **args = MALLOC_PTR;
-    char recAorB = '\0';
-    bool hid = false;
-    bool in_dirs = 0;
+    char **dirs = MALLOC_PTR, **args = MALLOC_PTR, recAorB = '\0';
+    bool hid = false, in_dirs = false;
 
-    if (!dirs || !args)
-    {
-        perror("Error al asignar memoria");
-        freeMatrix(2, dirs, args);
-        return;
-    }
+    if (!dirs || !args) { perror("Error al asignar memoria"); freeMatrix(2, dirs, args); return; }
 
     //inicializo sus elementos como nulos
-    for (i = 0; i < MAX_PROMPT; i++)
-    {
-        dirs[i] = NULL;
-        args[i] = NULL;
-    }
+    for (i = 0; i < MAX_PROMPT; i++) { dirs[i] = NULL; args[i] = NULL; }
 
     for (i = 1; command[i]; i++)
     {
@@ -460,54 +344,30 @@ void f_list(char ** command)
         {
             //se inicializa la posicion en la que se guardará el argumento
             args[args_pos] = MALLOC;
-            args[args_pos][0] = '\0';
-            if (!args[args_pos])
-            {
-                perror("Error al asignar memoria");
-                freeMatrixAllElements(2, dirs, args);
-                return;
-            }
+            initializeString(args[args_pos]);
+            if (!args[args_pos]){ perror("Error al asignar memoria"); freeMatrixAllElements(2, dirs, args); return; }
             //se guarda cuales de los parametros se han pasado
-            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[args_pos], "long");
-            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos], "link");
-            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos], "acc");
-            else if (!strcmp(command[i], "-reca")) recAorB = 'A';
-            else if (!strcmp(command[i], "-recb")) recAorB = 'B';
-            else if (!strcmp(command[i], "-hid")) hid = true;
-            else
-            {
-                //si se repite un parámetro entre long, acc y link se libera la posicion ya que no se añadirá nada, tampoco incrementa breakpoint
-                freeStrings(1, args[args_pos]);
-                args[args_pos] = NULL;
-                args_pos --;
-            }
-            args_pos++;
+            if (!strcmp(command[i], "-long") && !includesString("long", args)) strcpy(args[args_pos++], "long");
+            else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos++], "link");
+            else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos++], "acc");
+            else if (!strcmp(command[i], "-reca")) { recAorB = 'A'; args_pos++; }
+            else if (!strcmp(command[i], "-recb")) { recAorB = 'B'; args_pos++; }
+            else if (!strcmp(command[i], "-hid")) { hid = true; args_pos++; }
+            //si se repite un parámetro entre long, acc y link se libera la posicion ya que no se añadirá nada, tampoco incrementa args_pos
+            else freeStrings(1, args[args_pos]);
         }       
         else
         {
             dirs[dirs_pos] = MALLOC;
-            if (!dirs[dirs_pos])
-            {
-                perror("Error al asignar memoria");
-                freeMatrixAllElements(2, dirs, args);
-                return;
-            }
+            if (!dirs[dirs_pos]) { perror("Error al asignar memoria"); freeMatrixAllElements(2, dirs, args); return; }
             strcpy(dirs[dirs_pos++], command[i]);
         }
     }
 
-    if (!dirs[0])
-    {
-        printCurrentDir();
-        freeMatrixAllElements(2, dirs, args);
-        return;
-    }
+    if (!dirs[0]) { printCurrentDir(); freeMatrixAllElements(2, dirs, args); return; }
 
-    if (recAorB == 'B') for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
-    else if (recAorB == 'A') for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
-    else for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, '\0', hid, false);
+    for (i = 0; i < dirs_pos; i++) listDirElements(dirs[i], args, recAorB, hid, false);
     
-
     freeMatrixAllElements(2, dirs, args);
 }
 
@@ -517,21 +377,15 @@ void f_delete(char ** command)
     char sure, aux;
     int i;
 
-    if (!command[1]) 
-    {
-        printCurrentDir();
-        return;
-    }
+    if (!command[1]) { printCurrentDir(); return; }
 
     if (!strcmp(command[0], "deltree"))
     {
         printf("Esta es una acción destructiva, deseas continuar [y/n]? ");
-        scanf("%c", &sure);
-        scanf("%c", &aux);
+        scanf("%c", &sure); scanf("%c", &aux); //aux para evitar desbordamiento de buffer
         if (sure!='y' && sure !='Y') return;
     }
     
-
     for (i = 1; command[i]; i++)
     {
         if (lstat(command[i], &attr)) fprintf(stderr, "Imposible borrar %s: %s\n", command[i], strerror(errno));
