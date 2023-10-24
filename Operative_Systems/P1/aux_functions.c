@@ -208,6 +208,7 @@ char LetraTF (mode_t m)
 void printStat(char * file, struct stat attr, char * print_mode, bool link, bool is_from_list)
 {
     int year, month, day, hour, min;
+    size_t len;
     nlink_t n_link;
     mode_t mode;
     ino_t n_ino;
@@ -222,8 +223,14 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     struct passwd *prop;
     struct group *group;
     initializeString(link_path);
-    readlink(file, link_path, MAX_PROMPT);
-    link_path[strlen(link_path)] = '\0';
+    len = readlink(file, link_path, MAX_PROMPT);
+    if (len!=-1) link_path[len] = '\0';
+    else
+    {
+        printf("Error al leer enlace simbólico");
+        freeStrings(2, permissions, link_path);
+        return;
+    }
 
     if (!lstat(file, &attr))
     {
