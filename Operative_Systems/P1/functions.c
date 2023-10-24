@@ -54,7 +54,7 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     if (!command[1] || !isDigitString(command[1]) || !string || !strings) 
     {
         //si el error fue ocasionado por un error de memoria no se imprime nada
-        if (command[1] && isDigitString(command[1])) printf("Error al asignar memoria");
+        if (command[1] && isDigitString(command[1])) perror("Error al asignar memoria");
         //si no hay argumentos o el argumento no es un número se imprime el historial
         else printHistUntil(listLength(*command_history), *command_history);
         freeAll(2, string, strings); return;
@@ -84,7 +84,7 @@ void f_open(char ** command, tList * open_files, bool show_message)
     if (!command[1] || !mode_c || !output)
     {
         //si no hay argumentos se imprime la lista de ficheros abiertos
-        !command[1]? printOpenListByDF(*open_files):printf("Error al asignar memoria");
+        !command[1]? printOpenListByDF(*open_files):perror("Error al asignar memoria");
         freeAll(2, mode_c, output); return;
     }
 
@@ -187,14 +187,9 @@ void f_dup(char ** command, tList * open_files)
 
 void f_listopen(char ** command, tList open_files)
 {
-    //si no hay argumentos se imprime la lista de archivos abiertos
-    if (command[1])
-    { 
-        /*se comprueba que el primer argumento se corresponde con un entero positivo,
-        si lo es se imprime la lista de arhivos abiertos hasta ese numero*/
-        if (!isDigitString(command[1])) return;
-        printOpenListByDFUntil(atoi(command[1]), open_files);
-    }
+    //si tiene argumento y es un numero se imprime hasta ahi
+    if (command[1] && isDigitString(command[1])) printOpenListByDFUntil(atoi(command[1]), open_files);
+    //en cualquier otro caso se imprime todo
     else printOpenListByDF(open_files);
  }
 
@@ -248,7 +243,7 @@ void f_invalid() { perror("No ejecutado"); }
 void f_create(char ** command, tList * open_files)
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { printf("Error al asignar memoria"); freeAll(2, string, strings); return; }
+    if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return; }
 
     if (!command[1] || (!strcmp(command[1], "-f") && !command[2])) printCurrentDir();
     else if (!strcmp(command[1], "-f"))
@@ -270,7 +265,7 @@ void f_stat(char ** command)
     bool in_files = 0;
     int i, args_pos = 0, files_pos = 0;
 
-    if (!files || !args) { printf("Error al asignar memoria"); freeAll(2, files, args); return; }
+    if (!files || !args) { perror("Error al asignar memoria"); freeAll(2, files, args); return; }
 
     //inicializo sus elementos como nulos
     for (i = 0; i < MAX_PROMPT; i++) { files[i] = NULL; args[i] = NULL; }
@@ -293,7 +288,6 @@ void f_stat(char ** command)
             else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos++], "acc");
             //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa args_pos
             else freeAll(1, args[args_pos]);
-
         }       
         else
         {

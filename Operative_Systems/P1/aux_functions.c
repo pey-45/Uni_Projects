@@ -53,7 +53,7 @@ tPosL getPosByDF(int df, tList L)
 {
     tPosL i;
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { printf("Error al asignar memoria"); freeAll(2, string, strings); return NULL; }
+    if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return NULL; }
 
     /*recorre la lista de archivos abiertos y devuelve la 
     posición del elemento con el df dado y nulo si no lo encuentra*/
@@ -74,7 +74,7 @@ void printOpenListByDF(tList L)
     int i, last_index;
     tPosL pos;
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { printf("Error al asignar memoria"); freeAll(2, string, strings); return; }
+    if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return; }
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
     strcpy(string, getItem(last(L)));
@@ -124,7 +124,7 @@ bool isDigitString(char * string)
 void printCurrentDir()
 {
     char *dir = MALLOC;
-    if (!dir) { printf("Error al asignar memoria."); return; }
+    if (!dir) { perror("Error al asignar memoria"); return; }
 
     getcwd(dir, MAX_PROMPT);
     printf("%s\n", dir);
@@ -155,14 +155,13 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     mode_t mode;
     ino_t n_ino;
     char *permissions = malloc(12*sizeof(char*)), *link_path = MALLOC;
-    if (!permissions || !link_path) { printf("Error al asignar memoria"); freeAll(2, permissions, link_path); return; }
+    if (!permissions || !link_path) { perror("Error al asignar memoria"); freeAll(2, permissions, link_path); return; }
     off_t size;
     struct passwd *prop;
     struct group *group;
     initializeString(link_path);
     len = readlink(file, link_path, MAX_PROMPT);
-    if (len!=-1) link_path[len] = '\0';
-    else { printf("Error al leer enlace simbólico"); freeAll(2, permissions, link_path); return; }
+    if (len!=-1) link_path[len] = '\0';    
 
     if (!lstat(file, &attr))
     {
@@ -234,7 +233,7 @@ void aux_stat(char ** command)
     bool in_files = 0;
     //reservo memoria para las listas de archivos y argumentos
     char *file = MALLOC, **args = MALLOC_PTR;
-    if (!file || !args) { printf("Error al asignar memoria"); freeAll(2, file, args); return; }
+    if (!file || !args) { perror("Error al asignar memoria"); freeAll(2, file, args); return; }
 
     //inicializo sus elementos como nulos
     for (i = 0; i < MAX_PROMPT; i++) args[i] = NULL;
@@ -248,7 +247,7 @@ void aux_stat(char ** command)
         {
             //se inicializa la posicion en la que se guardará el argumento
             args[args_pos] = MALLOC;
-            if (!args[args_pos]) { printf("Error al asignar memoria"); freeAllRec(1, args); freeAll(1, file); return; }
+            if (!args[args_pos]) { perror("Error al asignar memoria"); freeAllRec(1, args); freeAll(1, file); return; }
             initializeString(args[args_pos]); //para evitar fallos con el strcmp
 
             //se guarda cuales de los parametros se han pasado
@@ -272,7 +271,7 @@ void aux_stat(char ** command)
 void printAsStat(char * dir, char ** args)
 {
     char *command = MALLOC, **full_command = MALLOC_PTR;
-    if (!command || !full_command) { printf("Error al asignar memoria"); freeAll(2, command, full_command); return; }
+    if (!command || !full_command) { perror("Error al asignar memoria"); freeAll(2, command, full_command); return; }
 
     strcpy(command, "stat ");
     if (includesString("long", args)) strcat(command, "-long ");
@@ -293,7 +292,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
     //se crea una variable tipo directorio que almacena las caracteristicas del directorio de entrada
     DIR *dir = opendir(_dir);
 
-    if (!dir || !subroute)  { !dir? fprintf(stderr, "Error al acceder a %s: %s\n", _dir, strerror(errno)):printf("Error al asignar memoria");
+    if (!dir || !subroute)  { !dir? fprintf(stderr, "Error al acceder a %s: %s\n", _dir, strerror(errno)):perror("Error al asignar memoria");
                               freeAll(1, subroute); return; }
 
     //se utiliza este modo de recursividad en deltree
