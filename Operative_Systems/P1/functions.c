@@ -21,7 +21,7 @@ void f_chdir(char ** command)
 {
     //si no hay argumentos imprime el directorio actual
     if (!command[1]) printCurrentDir();
-    //si el argumento no es un directorio valido salta error, en cualquier otro caso cambia al directorio dado*/
+    //si el argumento no es un directorio valido salta error, en cualquier otro caso cambia al directorio dado
     else if (chdir(command[1])) perror("Imposible cambiar directorio");
 }
 
@@ -37,13 +37,11 @@ void f_time(char ** command)
 
 void f_hist(char ** command, tList * command_history)
 {
-    //si no hay argumentos se imprime el historial
-    if (!command[1]) { printHistUntil(listLength(*command_history), *command_history); return; }
-    
-    //si el argumento es -c se borra la lista
-    if (!strcmp(command[1], "-c")) deleteList(command_history);
-    //si no hay que comprobar si lo que hay despues es un numero
-    else if (command[1][0]=='-' && isDigitString(command[1]+1 /*sin el guion*/)) printHistUntil(atoi(command[1]+1), *command_history);
+    //si hay argumento y es -c se borra la lista
+    if (command[1] && !strcmp(command[1], "-c")) deleteList(command_history);
+    //si hay argumento y no es -c hay que comprobar si lo que hay despues es un numero
+    else if (command[1] && command[1][0]=='-' && isDigitString(command[1]+1 /*sin el guion*/)) printHistUntil(atoi(command[1]+1), *command_history);
+    //en cualquier otro caso se imprime el historial
     else printHistUntil(listLength(*command_history), *command_history); //por seguir la shell de referencia
 }
 
@@ -53,11 +51,12 @@ void f_command(char ** command, tList * command_history, tList * open_files)
     int current_index = 0;
     tPosL i;
 
-    //si no hay argumentos se imprime el historial
     if (!command[1] || !isDigitString(command[1]) || !string || !strings) 
     {
-        if (!command[1]) printHistUntil(listLength(*command_history), *command_history);
-        else if (isDigitString(command[1])) printf("Error al asignar memoria");
+        //si el error fue ocasionado por un error de memoria no se imprime nada
+        if (command[1] && isDigitString(command[1])) printf("Error al asignar memoria");
+        //si no hay argumentos o el argumento no es un número se imprime el historial
+        else printHistUntil(listLength(*command_history), *command_history);
         freeStrings(1, string); freeMatrix(1, strings); return;
     }
 
@@ -82,9 +81,9 @@ void f_open(char ** command, tList * open_files, bool show_message)
     int i, df, mode = 0;
     char *mode_c = MALLOC, *output = MALLOC;
 
-    //se comprueba que hay memoria suficiente
     if (!command[1] || !mode_c || !output)
     {
+        //si no hay argumentos se imprime la lista de ficheros abiertos
         !command[1]? printOpenListByDF(*open_files):printf("Error al asignar memoria");
         freeStrings(2, mode_c, output); return;
     }
@@ -123,12 +122,12 @@ void f_close (char ** command, tList * open_files)
     int df;
 
     //si no hay argumentos se imprime la lista de archivos abiertos
-    //si hay se comprueba que el primer argumento se corresponde con un entero positivo
+    //si hay se comprueba que el primer argumento se corresponde con un numero
     if (!command[1] || !isDigitString(command[1])) { if (!command[1]) printOpenListByDF(*open_files); return; }
 
     //se intenta cerrar y no se puede da error
     if (close(df = atoi(command[1]))==-1) perror("Imposible cerrar descriptor");
-    //si no simplemente se cerro y se elimina de la lista de ficheros abiertos
+    //si no simplemente se cerró y se elimina de la lista de ficheros abiertos
     else deleteAtPosition(getPosByDF(df, *open_files), open_files);
 }
 
@@ -140,14 +139,14 @@ void f_dup(char ** command, tList * open_files)
 
     if (!output || !p || !mode || !aux || !aux_strings || !command[1] || !isDigitString(command[1]))
     {
-        //si no hay argumentos se imprime la lista de archivos abiertos
-        if (!command[1]) printOpenListByDF(*open_files);
-        //si es un entero positivo, por descarte el fallo es de asignacion de memoria
-        else if (isDigitString(command[1])) perror("Error al asignar memoria");
+        //si no hay argumentos o no es un numero se imprime la lista de archivos abiertos
+        if (!command[1] || !isDigitString(command[1])) printOpenListByDF(*open_files);
+        //si no es un error de memoria
+        else perror("Error al asignar memoria");
 
         freeStrings(4, output, p, mode, aux); freeMatrix(1, aux_strings); return;
     }
-    //el entero positivo se guarda en df
+    //el numero se guarda en df
     df = atoi(command[1]);
 
     /*guardamos la posicion y si existe almacenamos el string en una variable auxiliar 
@@ -179,7 +178,7 @@ void f_dup(char ** command, tList * open_files)
     //se quita el espacio sobrante
     p[strlen(p)-1] = '\0';
 
-    //se coloca tod0 en su lugar y se inserta en la lista de archivos abiertos
+    //se coloca todo en su lugar y se inserta en la lista de archivos abiertos
     sprintf(output, "Descriptor: %d -> dup %d (%s) %s", dup(df), df, p, mode);
     insertItem(output, NULL, open_files);
 
