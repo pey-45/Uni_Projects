@@ -419,37 +419,13 @@ void f_stat(char ** command)
         return;
     }
 
-    if (includesString("long", args))
+    for (i = 0; i < files_pos; i++)
     {
-        for (i = 0; i < files_pos; i++)
-        {
-            if (!stat(files[i], &attr)) printStat(files[i], attr, "long", includesString("link", args), false);
-            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
-        }
-    }
-    else if (includesString("acc", args))
-    {
-        for (i = 0; i < files_pos; i++)
-        {
-            if (!stat(files[i], &attr)) printStat(files[i], attr, "acc", includesString("link", args), false);
-            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
-        }
-    }
-    else if (includesString("link", args))
-    {
-        for (i = 0; i < files_pos; i++)
-        {
-            if (!stat(files[i], &attr)) printStat(files[i], attr, "link", true, false);
-            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
-        }
-    }
-    else
-    {
-        for (i = 0; i < files_pos; i++)
-        {
-            if (!stat(files[i], &attr)) printStat(files[i], attr, "few", includesString("link", args), false);
-            else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
-        }
+        if (includesString("long", args) && !stat(files[i], &attr)) printStat(files[i], attr, "long", includesString("link", args), false);
+        else if (includesString("acc", args) && !stat(files[i], &attr)) printStat(files[i], attr, "acc", includesString("link", args), false);
+        else if (includesString("link", args) && !stat(files[i], &attr)) printStat(files[i], attr, "link", includesString("link", args), false);
+        else if (!stat(files[i], &attr)) printStat(files[i], attr, "few", includesString("link", args), false);
+        else fprintf(stderr, "Error al acceder a %s: %s\n", files[i], strerror(errno));
     }
 
     freeMatrixAllElements(2, files, args);
