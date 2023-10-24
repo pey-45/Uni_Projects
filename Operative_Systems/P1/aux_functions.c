@@ -1,7 +1,9 @@
 #include "aux_functions.h"
 
-//liberar strings
-void freeStrings(int n, ...)
+//libera strings y cadenas de strings con solo elementos nulos
+//sirve para trocearcadena
+//IMPORTANTE LIBERAR PRIMERO EL STRING Y LUEGO LA CADENA DE PUNTEROS A STRING
+void freeAll(int n, ...)
 {
     va_list args;
     va_start(args, n);
@@ -16,9 +18,8 @@ void freeStrings(int n, ...)
     va_end(args);
 }
 
-//liberar arrays de strings cuyos elementos no apuntan a ninguna cadena anteriormente liberada
-//en otras palabras, para los cuales no tienen elementos o han sido procesados por TrocearCadena
-void freeMatrixAllElements(int n, ...)
+//libera cadenas de strings liberando uno por uno todos sus elementos
+void freeAllRec(int n, ...)
 {
     va_list args;
     va_start(args, n);
@@ -37,27 +38,12 @@ void freeMatrixAllElements(int n, ...)
     va_end(args);
 }
 
-//libera arrays de strings
-void freeMatrix(int n, ...)
-{
-    va_list args;
-    va_start(args, n);
-    int i;
-
-    for (i = 0; i < n; i++)
-    {
-        char **aux = va_arg(args, char**);
-        if (aux) { free(aux); aux = NULL; }
-    }
-
-    va_end(args);
-}
-
 int TrocearCadena(char * cadena, char ** trozos)
 {
     /*asigna al array de cadenas los elementos separados 
     por espacios, tabs o saltos de línea y devuelve la cantidad de trozos*/
     int i;
+
     if (!(trozos[0]=strtok(cadena," \n\t"))) return 0;
     for (i = 1; (trozos[i]=strtok(NULL," \n\t")); ++i);
     return i;
@@ -67,7 +53,7 @@ tPosL getPosByDF(int df, tList L)
 {
     tPosL i;
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { printf("Error al asignar memoria"); freeStrings(1, string); freeMatrix(1, strings); return NULL; }
+    if (!string || !strings) { printf("Error al asignar memoria"); freeAll(2, string, strings); return NULL; }
 
     /*recorre la lista de archivos abiertos y devuelve la 
     posición del elemento con el df dado y nulo si no lo encuentra*/
@@ -78,7 +64,7 @@ tPosL getPosByDF(int df, tList L)
         if (atoi(strings[1])==df) break;
     }
 
-    freeStrings(1, string); freeMatrix(1, strings);
+    freeAll(2, string, strings);
 
     return i;
 }
@@ -88,7 +74,7 @@ void printOpenListByDF(tList L)
     int i, last_index;
     tPosL pos;
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { printf("Error al asignar memoria"); freeStrings(1, string); freeMatrix(1, strings); return; }
+    if (!string || !strings) { printf("Error al asignar memoria"); freeAll(2, string, strings); return; }
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
     strcpy(string, getItem(last(L)));
@@ -102,7 +88,7 @@ void printOpenListByDF(tList L)
         if (pos) { printItem(pos); printf("\n"); }
     }
 
-    freeStrings(1, string); freeMatrix(1, strings);
+    freeAll(2, string, strings);
 }
 
 void printOpenListByDFUntil(int limit, tList L)
@@ -143,7 +129,7 @@ void printCurrentDir()
     getcwd(dir, MAX_PROMPT);
     printf("%s\n", dir);
 
-    freeStrings(1, dir);
+    freeAll(1, dir);
 }
 
 char LetraTF (mode_t m)
@@ -169,14 +155,14 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
     mode_t mode;
     ino_t n_ino;
     char *permissions = malloc(12*sizeof(char*)), *link_path = MALLOC;
-    if (!permissions || !link_path) { printf("Error al asignar memoria"); freeStrings(2, permissions, link_path); return; }
+    if (!permissions || !link_path) { printf("Error al asignar memoria"); freeAll(2, permissions, link_path); return; }
     off_t size;
     struct passwd *prop;
     struct group *group;
     initializeString(link_path);
     len = readlink(file, link_path, MAX_PROMPT);
     if (len!=-1) link_path[len] = '\0';
-    else { printf("Error al leer enlace simbólico"); freeStrings(2, permissions, link_path); return; }
+    else { printf("Error al leer enlace simbólico"); freeAll(2, permissions, link_path); return; }
 
     if (!lstat(file, &attr))
     {
@@ -194,7 +180,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
         prop = getpwuid(attr.st_uid);
         group = getgrgid(attr.st_gid);
     }
-    else { fprintf(stderr, "Error al acceder a %s: %s\n", file, strerror(errno)); freeStrings(2, permissions, link_path); return; }
+    else { fprintf(stderr, "Error al acceder a %s: %s\n", file, strerror(errno)); freeAll(2, permissions, link_path); return; }
 
     ConvierteModo(mode, permissions);
 
@@ -206,7 +192,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
 
     printf("%8d  %s         %s\n", (int)size, is_from_list? getLastNamePath(file):file, link? link_path:"");
 
-    freeStrings(2, permissions, link_path);
+    freeAll(2, permissions, link_path);
 }
 
 char * ConvierteModo (mode_t m, char *permisos)
@@ -248,7 +234,7 @@ void aux_stat(char ** command)
     bool in_files = 0;
     //reservo memoria para las listas de archivos y argumentos
     char *file = MALLOC, **args = MALLOC_PTR;
-    if (!file || !args) { printf("Error al asignar memoria"); freeMatrix(1, args);freeStrings(1, file); return; }
+    if (!file || !args) { printf("Error al asignar memoria"); freeAll(2, file, args); return; }
 
     //inicializo sus elementos como nulos
     for (i = 0; i < MAX_PROMPT; i++) args[i] = NULL;
@@ -262,7 +248,7 @@ void aux_stat(char ** command)
         {
             //se inicializa la posicion en la que se guardará el argumento
             args[args_pos] = MALLOC;
-            if (!args[args_pos]) { printf("Error al asignar memoria"); freeMatrixAllElements(1, args); freeStrings(1, file); return; }
+            if (!args[args_pos]) { printf("Error al asignar memoria"); freeAllRec(1, args); freeAll(1, file); return; }
             initializeString(args[args_pos]); //para evitar fallos con el strcmp
 
             //se guarda cuales de los parametros se han pasado
@@ -270,7 +256,7 @@ void aux_stat(char ** command)
             else if (!strcmp(command[i], "-link") && !includesString("link", args)) strcpy(args[args_pos++], "link");
             else if (!strcmp(command[i], "-acc") && !includesString("acc", args)) strcpy(args[args_pos++], "acc");
             //si se repite un parámetro se libera la posicion ya que no se añadirá nada, tampoco incrementa args_pos
-            else { freeStrings(1, args[args_pos]); args[args_pos] = NULL; }
+            else { freeAll(1, args[args_pos]); args[args_pos] = NULL; }
         }       
         else strcpy(file, command[i]);
     }
@@ -280,13 +266,13 @@ void aux_stat(char ** command)
     else if (includesString("link", args) && !stat(file, &attr)) printStat(file, attr, "link", true, true);
     else if (!stat(file, &attr)) printStat(file, attr, "few", includesString("acc", args), true);
 
-    freeMatrixAllElements(1, args); freeStrings(1, file);
+    freeAllRec(1, args); freeAll(1, file);
 }
 
 void printAsStat(char * dir, char ** args)
 {
     char *command = MALLOC, **full_command = MALLOC_PTR;
-    if (!command || !full_command) { printf("Error al asignar memoria"); freeStrings(1, command); freeMatrix(1, full_command); return; }
+    if (!command || !full_command) { printf("Error al asignar memoria"); freeAll(2, command, full_command); return; }
 
     strcpy(command, "stat ");
     if (includesString("long", args)) strcat(command, "-long ");
@@ -297,7 +283,7 @@ void printAsStat(char * dir, char ** args)
     TrocearCadena(command, full_command);
     aux_stat(full_command);
 
-    freeStrings(1, command); freeMatrix(1, full_command);
+    freeAll(2, command, full_command);
 }
 
 void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltree /*deltree utiliza esta funcion para eliminar un directorio no vacío*/) 
@@ -308,7 +294,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
     DIR *dir = opendir(_dir);
 
     if (!dir || !subroute)  { !dir? fprintf(stderr, "Error al acceder a %s: %s\n", _dir, strerror(errno)):printf("Error al asignar memoria");
-                              freeStrings(1, subroute); return; }
+                              freeAll(1, subroute); return; }
 
     //se utiliza este modo de recursividad en deltree
     if (mode == 'B')
@@ -358,7 +344,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
         while ((entry = readdir(dir))) if (entry->d_name[0]!='.' || hid) printAsStat(entry->d_name, args);
     }
 
-    freeStrings(1, subroute);
+    freeAll(1, subroute);
     
     closedir(dir);
 }

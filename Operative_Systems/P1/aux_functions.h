@@ -1,8 +1,7 @@
 #include "list.h"
 
-void freeStrings(int n, ...);
-void freeMatrixAllElements(int n, ...);
-void freeMatrix(int n, ...);
+void freeAll(int n, ...);
+void freeAllRec(int n, ...);
 int TrocearCadena(char * cadena, char ** trozos);
 tPosL getPosByDF(int df, tList L);
 void printOpenListByDF(tList L);
