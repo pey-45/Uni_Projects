@@ -298,7 +298,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
     //se utiliza este modo de recursividad en deltree
     if (mode == 'B')
     {
-        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+        while ((entry = readdir(dir))) if (isDir(entry->d_name) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
             listDirElements(subroute, args, mode, hid, deltree);
@@ -313,7 +313,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
             if (!deltree) printAsStat(subroute, args);
             else 
             {
-                if (entry->d_type == DT_DIR) { if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno)); }
+                if (isDir(entry->d_name)) { if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno)); }
                 else if (remove(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
             }
         }
@@ -330,7 +330,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
 
         //vuelvo a recorrer el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
         rewinddir(dir);
-        while ((entry = readdir(dir))) if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+        while ((entry = readdir(dir))) if (isDir(entry->d_name) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
             listDirElements(subroute, args, mode, hid, deltree);
@@ -355,3 +355,10 @@ char *getLastNamePath(char *dir)
 }
 
 void initializeString(char * string) { string[0] = '\0'; }
+
+bool isDir(char * _dir)
+{
+    struct stat attr;
+    if (!stat(_dir, &attr)) return S_ISDIR(attr.st_mode);
+    else return false;
+}
