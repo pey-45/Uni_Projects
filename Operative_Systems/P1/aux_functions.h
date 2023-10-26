@@ -4,6 +4,7 @@ void freeAll(int n, ...);
 void freeAllRec(int n, ...);
 int TrocearCadena(char * cadena, char ** trozos);
 tPosL getPosByDF(int df, tList L);
+tPosL getLastPosByDF(tList L);
 void printOpenListByDF(tList L);
 void printOpenListByDFUntil(int limit, tList L);
 void printHistUntil(int limit, tList L);

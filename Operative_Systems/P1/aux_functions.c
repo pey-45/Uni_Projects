@@ -69,6 +69,25 @@ tPosL getPosByDF(int df, tList L)
     return i;
 }
 
+tPosL getLastPosByDF(tList L)
+{
+    tPosL i;
+    char *string = MALLOC, **strings = MALLOC_PTR;
+    int max = 0;
+    if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return NULL; }
+
+    for (i = first(L); i; i = next(i))
+    {
+        strcpy(string, getItem(i));
+        TrocearCadena(string, strings);
+        if (atoi(strings[1]) > max) max = atoi(strings[1]);
+    }
+
+    freeAll(2, string, strings);
+
+    return getPosByDF(max, L);
+}
+
 void printOpenListByDF(tList L)
 {
     int i, last_index;
@@ -77,7 +96,7 @@ void printOpenListByDF(tList L)
     if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return; }
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
-    strcpy(string, getItem(last(L)));
+    strcpy(string, getItem(getLastPosByDF(L)));
     TrocearCadena(string, strings);
     last_index = atoi(strings[1]);
 
@@ -298,16 +317,18 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
     //se utiliza este modo de recursividad en deltree
     if (mode == 'B')
     {
-        while ((entry = readdir(dir))) if (isDir(entry->d_name) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+        //primero crear subroute y luego hacerle isdir
+        while ((entry = readdir(dir))) 
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
-            listDirElements(subroute, args, mode, hid, deltree);
+            if (isDir(subroute) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) listDirElements(subroute, args, mode, hid, deltree);
         }
 
         rewinddir(dir);
         if (!deltree) printf("************%s\n", _dir);
         //luego listo todos los elementos del directorio
-        while ((entry = readdir(dir))) if (entry->d_name[0]!='.' || hid) 
+        //sin deltree no puede ser ni . ni .. ni archivo oculto (excepto hid), con deltree los archivos ocultos si se iteran, pero . y .. no
+        while ((entry = readdir(dir))) if ((!deltree && (entry->d_name[0]!='.' || hid)) || (deltree && (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")))) 
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
             if (!deltree) printAsStat(subroute, args);
@@ -330,10 +351,10 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
 
         //vuelvo a recorrer el directorio y si el elemento es un directorio se imprimen sus elementos de la misma forma
         rewinddir(dir);
-        while ((entry = readdir(dir))) if (isDir(entry->d_name) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+        while ((entry = readdir(dir))) 
         {
             snprintf(subroute, MAX_PROMPT, "%s/%s", _dir, entry->d_name);
-            listDirElements(subroute, args, mode, hid, deltree);
+            if (isDir(subroute) && strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) listDirElements(subroute, args, mode, hid, deltree);
         }
     }
     else

@@ -48,7 +48,7 @@ void f_hist(char ** command, tList * command_history)
 void f_command(char ** command, tList * command_history, tList * open_files) 
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
-    int current_index = 0;
+    int current_index = 1;
     tPosL i;
 
     if (!command[1] || !isDigitString(command[1]) || !string || !strings) 
