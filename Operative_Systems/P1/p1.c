@@ -16,7 +16,7 @@ int main()
 	//obtencion de nombre de usuario y nodename para formato de input
 	if (!username)
 	{
-    	perror("No se pudo obtener el nombre de usuario.\n");
+    	perror("No se pudo obtener el nombre de usuario\n");
 		f_quit(&command_history, &open_files);
 	}
 

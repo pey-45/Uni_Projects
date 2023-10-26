@@ -32,7 +32,7 @@ void f_time(char ** command)
 
     //se imprime la hora o la fecha dependiendo del comando
     !strcmp(command[0], "time")? printf("%02d:%02d:%02d\n", local->tm_hour, local->tm_min, local->tm_sec):
-                                 printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);; 
+                                 printf("%02d/%02d/%d\n", local->tm_mday, local->tm_mon+1, local->tm_year+1900);
 }
 
 void f_hist(char ** command, tList * command_history)
@@ -42,7 +42,7 @@ void f_hist(char ** command, tList * command_history)
     //si hay argumento y no es -c hay que comprobar si lo que hay despues es un numero
     else if (command[1] && command[1][0]=='-' && isDigitString(command[1]+1 /*sin el guion*/)) printHistUntil(atoi(command[1]+1), *command_history);
     //en cualquier otro caso se imprime el historial
-    else printHistUntil(listLength(*command_history), *command_history); //por seguir la shell de referencia
+    else printHistUntil(listLength(*command_history), *command_history);
 }
 
 void f_command(char ** command, tList * command_history, tList * open_files) 
@@ -57,6 +57,7 @@ void f_command(char ** command, tList * command_history, tList * open_files)
         if (command[1] && isDigitString(command[1])) perror("Error al asignar memoria");
         //si no hay argumentos o el argumento no es un número se imprime el historial
         else printHistUntil(listLength(*command_history), *command_history);
+
         freeAll(2, string, strings); return;
     }
 
@@ -105,7 +106,7 @@ void f_open(char ** command, tList * open_files, bool show_message)
     }
 
     //se intenta abrir y no se puede da error
-    if ((df=open(command[1], mode, 0777))==-1) perror(show_message? "Imposible abrir fichero":"Imposible abrir");
+    if ((df=open(command[1], mode, 0777))==-1) fprintf(stderr, "Imposible abrir %s: %s\n", command[1], strerror(errno));
     //si no simplemente se abrio y se añade a la lista de ficheros abiertos con su descriptor y modo
     else
     {
@@ -121,9 +122,8 @@ void f_close (char ** command, tList * open_files)
 {
     int df;
 
-    //si no hay argumentos se imprime la lista de archivos abiertos
-    //si hay se comprueba que el primer argumento se corresponde con un numero
-    if (!command[1] || !isDigitString(command[1])) { if (!command[1]) printOpenListByDF(*open_files); return; }
+    //si no hay argumentos o este no es un numero se imprime la lista de archivos abiertos
+    if (!command[1] || !isDigitString(command[1])) { printOpenListByDF(*open_files); return; }
 
     //se intenta cerrar y no se puede da error
     if (close(df = atoi(command[1]))==-1) perror("Imposible cerrar descriptor");
@@ -134,6 +134,7 @@ void f_close (char ** command, tList * open_files)
 void f_dup(char ** command, tList * open_files)
 {
     int df;
+    tPosL pos;
     char *output = MALLOC, *p = MALLOC, *mode = MALLOC, *aux = MALLOC, **aux_strings = MALLOC_PTR;
     initializeString(p);
 
@@ -151,7 +152,7 @@ void f_dup(char ** command, tList * open_files)
 
     /*guardamos la posicion y si existe almacenamos el string en una variable auxiliar 
     para separarla en un array de cadenas y manipularlas mejor*/
-    tPosL pos = getPosByDF(df, *open_files);
+    pos = getPosByDF(df, *open_files);
     if (pos) strcpy(aux, getItem(pos));
     else { perror("Imposible duplicar descriptor"); freeAll(5, output, p, mode, aux, aux_strings); return; }
 
@@ -191,7 +192,7 @@ void f_listopen(char ** command, tList open_files)
     if (command[1] && isDigitString(command[1])) printOpenListByDFUntil(atoi(command[1]), open_files);
     //en cualquier otro caso se imprime todo
     else printOpenListByDF(open_files);
- }
+}
 
 void f_infosys()
 {
@@ -243,10 +244,14 @@ void f_invalid() { perror("No ejecutado"); }
 void f_create(char ** command, tList * open_files)
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
-    if (!string || !strings) { perror("Error al asignar memoria"); freeAll(2, string, strings); return; }
+    if (!command[1] || (!strcmp(command[1], "-f") && !command[2]) || !string || !strings)
+    {
+        if (!command[1] || (!strcmp(command[1], "-f") && !command[2])) printCurrentDir();
+        else perror("Error al asignar memoria");
+        freeAll(2, string, strings); return;
+    }
 
-    if (!command[1] || (!strcmp(command[1], "-f") && !command[2])) printCurrentDir();
-    else if (!strcmp(command[1], "-f"))
+    if (!strcmp(command[1], "-f"))
     {
         sprintf(string, "open %s cr", command[2]);
         TrocearCadena(string, strings);
