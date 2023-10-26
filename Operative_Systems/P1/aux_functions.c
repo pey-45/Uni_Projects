@@ -334,7 +334,7 @@ void listDirElements(char * _dir, char ** args, char mode, bool hid, bool deltre
             if (!deltree) printAsStat(subroute, args);
             else 
             {
-                if (isDir(entry->d_name)) { if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno)); }
+                if (isDir(subroute)) { if (rmdir(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno)); }
                 else if (remove(subroute)) fprintf(stderr, "Imposible borrar %s: %s\n", entry->d_name, strerror(errno));
             }
         }
