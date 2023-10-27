@@ -116,7 +116,7 @@ void printOpenListByDFUntil(int limit, tList L)
     tPosL pos;
 
     //recorre la lista hasta el límite imprimiendo los elementos que encuentra
-    for (i = 0; i < limit; i++)
+    for (i = 0; i < limit && getPosByDF(i, L)!=next(getLastPosByDF(L)); i++)
     {
         pos = getPosByDF(i, L);
         if (pos){ printItem(pos); printf("\n"); }
@@ -197,6 +197,7 @@ void printStat(char * file, struct stat attr, char * print_mode, bool link, bool
         size = attr.st_size;
         prop = getpwuid(attr.st_uid);
         group = getgrgid(attr.st_gid);
+        if (!prop || !group) { perror("Error al obtener datos"); freeAll(2, permissions, link_path); return; }
     }
     else { fprintf(stderr, "Error al acceder a %s: %s\n", file, strerror(errno)); freeAll(2, permissions, link_path); return; }
 
