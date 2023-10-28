@@ -1,4 +1,4 @@
-//Algoritmos P1
+//Algoritmos P3
 //Autores:
 //Pablo Manzanares López        pablo.manzanares.lopez@udc.es
 //Alejandro Rodríguez Franco    alejandro.rodriguezf@udc.es
