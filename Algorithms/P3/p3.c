@@ -268,9 +268,9 @@ void testComplexities()
     printf("----------------------\n  TEST COMPLEJIDADES\n----------------------\nAleatorio:\n\n");
     tableTimes(initializeRandom, 1.8, 2, 2.2);
     printf("Descendente:\n\n");
-    tableTimes(initializeRandom, 1.8, 2, 2.2);
+    tableTimes(initializeDesc, 1.8, 2, 2.2);
     printf("Ascendente:\n\n");
-    tableTimes(initializeRandom, 1.8, 2, 2.2);
+    tableTimes(initializeAsc, 1.8, 2, 2.2);
 }
 
 
