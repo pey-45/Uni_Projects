@@ -1,0 +1,172 @@
+Informe realizado por: 
+
+	Nombres:
+		- Pablo Manzanares López
+		- Alejandro Rodríguez Franco
+		- Carlos Pérez Cambeiro
+	Logins:
+		- pablo.manzanares.lopez@udc.es
+		- alejandro.rodriguezf@udc.es
+		- carlos.perez.cambeiro@udc.es
+
+
+Introducción:
+
+	El objetivo de esta práctica es valorar la eficacia de los algoritmos de ordenación por inserción y shell, así como su comportamiento 
+    con distintas ordenaciones iniciales.
+	Nosotros decidimos ejecutar cada algoritmo 3 veces para contrastar resultados y obtener tiempos más precisos.
+
+	Para estas medidas, hemos utilizado un portátil con las siguientes características:
+
+		- CPU: 11th Gen Intel® Core™ i3-1115G4 @ 3.00GHz × 4
+		- SSD: 256.1GB
+		- RAM: 8GiB RAM  
+		- SO: Ubuntu 20.04.3 LTS
+
+	Medición de tiempos: µs.
+	Si t(n) < 500 µs entonces se marca con (*) y el tiempo se calcula con la media de K=1000 ejecuciones.
+
+
+Tabla de resultados:
+
+       ----------------------
+        Inserción ascendente
+       ----------------------
+
+             n              t(n)        t/n^0.8000        t/n^1.0000        t/n^1.2000
+     (*)   500          1.298000          0.008997          0.002596          0.000749
+     (*)  1000          2.609000          0.010387          0.002609          0.000655
+     (*)  2000          5.443000          0.012446          0.002721          0.000595
+     (*)  4000         10.744000          0.014110          0.002686          0.000511
+     (*)  8000         21.263000          0.016038          0.002658          0.000440
+     (*) 16000         42.177000          0.018272          0.002636          0.000380
+     (*) 32000         83.126000          0.020683          0.002598          0.000326
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0026
+
+       -----------------------
+        Insercion Desordenado
+       -----------------------
+
+             n              t(n)        t/n^1.9000        t/n^2.0000        t/n^2.1000
+     (*)   500        139.175000          0.001036          0.000557          0.000299
+          1000        550.000000          0.001097          0.000550          0.000276
+          2000       2220.000000          0.001187          0.000555          0.000260
+          4000       8597.000000          0.001231          0.000537          0.000234
+          8000      34561.000000          0.001327          0.000540          0.000220
+         16000     144114.000000          0.001482          0.000563          0.000214
+         32000     563977.000000          0.001554          0.000551          0.000195
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0005
+
+       -----------------------
+        Insercion Descendente
+       -----------------------
+
+             n              t(n)        t/n^1.8000        t/n^2.0000        t/n^2.2000
+     (*)   500        268.526000          0.003723          0.001074          0.000310
+          1000       1068.000000          0.004252          0.001068          0.000268
+          2000       4255.000000          0.004865          0.001064          0.000233
+          4000      16932.000000          0.005559          0.001058          0.000201
+          8000      67798.000000          0.006392          0.001059          0.000176
+         16000     273458.000000          0.007404          0.001068          0.000154
+         32000    1083692.000000          0.008426          0.001058          0.000133
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0011
+
+       ------------------
+        Shell Ascendente
+       ------------------
+
+             n              t(n)        t/n^0.8000        t/n^1.1300        t/n^1.5000
+     (*)   500         11.249000          0.077972          0.010029          0.001006
+     (*)  1000         25.592000          0.101884          0.010426          0.000809
+     (*)  2000         57.703000          0.131939          0.010741          0.000645
+     (*)  4000        128.018000          0.168121          0.010888          0.000506
+     (*)  8000        281.206000          0.212106          0.010928          0.000393
+         16000        609.000000          0.263828          0.010813          0.000301
+         32000       1322.000000          0.328936          0.010725          0.000231
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0106
+
+       -------------------
+        Shell Desordenado
+       -------------------
+
+             n              t(n)        t/n^0.8000        t/n^1.1900        t/n^1.6000
+     (*)   500         44.925000          0.311395          0.027588          0.002158
+     (*)  1000        104.628000          0.416532          0.028161          0.001658
+     (*)  2000        238.609000          0.545586          0.028149          0.001247
+          4000        541.000000          0.710476          0.027973          0.000933
+          8000       1241.000000          0.936052          0.028125          0.000706
+         16000       2807.000000          1.216036          0.027883          0.000527
+         32000       6426.000000          1.598898          0.027978          0.000398
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0280
+
+       -------------------
+        Shell Descendente
+       -------------------
+
+             n              t(n)        t/n^0.8000        t/n^1.1500        t/n^1.5000
+     (*)   500         17.055000          0.118216          0.013429          0.001525
+     (*)  1000         39.112000          0.155708          0.013877          0.001237
+     (*)  2000         89.840000          0.205421          0.014364          0.001004
+     (*)  4000        202.970000          0.266553          0.014624          0.000802
+     (*)  8000        439.021000          0.331141          0.014254          0.000614
+         16000        947.000000          0.410255          0.013855          0.000468
+         32000       2023.000000          0.503357          0.013337          0.000353
+                                     Sobreestimada          Ajustada       Subestimada
+                                                         Cte: 0.0140
+
+
+Análisis:
+
+	(sea n^x una subexpresión de t/n^x)
+
+	Inserción Ascendente:
+	- n^x = 0.8 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 1.2 es una cota subestimada ya que tiende a cero.
+	- n^x = 1 es una cota ajustada ya que t/n^x tiende a 0.0026.
+
+	Inserción Desordenado:
+	- n^x = 1.9 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 2.1 es una cota subestimada ya que tiende a cero.
+	- n^x = 2 es una cota ajustada ya que t/n^x tiende a 0.0005.
+
+    Inserción Descendente:
+	- n^x = 1.8 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 2.2 es una cota subestimada ya que tiende a cero.
+	- n^x = 2 es una cota ajustada ya que t/n^x tiende a 0.0011.
+
+    Shell Ascendente:
+	- n^x = 0.8 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 1.5 es una cota subestimada ya que tiende a cero.
+	- n^x = 1.13 es una cota ajustada ya que t/n^x tiende a 0.0106.
+
+    Shell Desordenado:
+	- n^x = 0.8 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 1.6 es una cota subestimada ya que tiende a cero.
+	- n^x = 1.19 es una cota ajustada ya que t/n^x tiende a 0.0280.
+
+    Shell Descendente:
+	- n^x = 0.8 es una cota sobreestimada ya que tiende a infinito.
+	- n^x = 1.5 es una cota subestimada ya que tiende a cero.
+	- n^x = 1.15 es una cota ajustada ya que t/n^x tiende a 0.0140.
+
+
+Conclusiones:
+
+     - El algoritmo de ordenación shell es más eficiente con valores aleatorios y en orden descendente, pero cuando el vector está ordenado ascendentemente
+       es más eficiente por inserción.
+
+     - En nuestro estudio empírico, en el algoritmo de ordenación por inserción, cuando el vector está inicialmente ordenado de forma ascendente (mejor caso)
+       tiene complejidad lineal, pero tiene complejidad cuadrática cuando está inicialmente ordenado de forma descendente (peor caso) y el caso promedio. En 
+       el algoritmo de ordenación shell la complejidad varía aproximadamente entre O(n^1.1) y O(n^1.2) (en nuestro estudio).
+
+     - No hemos añadido en las tablas las complejidades teóricas ya que en el algoritmo de ordenación por inserción las complejidades coinciden
+       con la cota ajustada, lo cual hace redundante compararlas; en el de ordenación shell directamente no se conocen.
+
+	 - Complejidades:
+        - ord_ins: teórico O(n^2), empírico {ascendente O(n), aleatorio O(n^2), descendente O(n^2)}
+        - ord_shell: teórico O(n^(1.1-1.2)), empírico {ascendente O(n^1.13), aleatorio O(n^1.19), descendente O(n^1.15)}.
