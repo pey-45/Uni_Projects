@@ -42,8 +42,8 @@ double getTimesCreate(int n);
 double getTimesOrder(int n, void (*initialize) (int*, int));
 //heap functions
 void swap(int * a, int * b);
-int hundir(pmonticulo m, int i);
-void crearMonticulo(int * v, pmonticulo m);
+void hundir(pmonticulo m, int i);
+void crearMonticulo(int * v, int n, pmonticulo m);
 int quitarMenor(pmonticulo m);
 void ordenarPorMonticulos(int * v, int n);
 //tests
@@ -107,7 +107,7 @@ void tableTimes(void (*initialize) (int*, int), double n1, double n2, double n3)
     }    
 }
 
-bool esMonticuloVacio(pmonticulo m) { return !m->ultimo; }
+bool esMonticuloVacio(pmonticulo m) { return m->ultimo==-1; }
 int leftChild(int i) { return 2*i+1; }
 int rightChild(int i) { return 2*i+2; }
 int size(pmonticulo m) { return m->ultimo + 1; }
@@ -180,28 +180,36 @@ void swap(int * a, int * b)
     *a = *b;
     *b = aux;
 }
-int hundir(pmonticulo m, int i)
+void hundir(pmonticulo m, int i)
 {
-    int j;
+    int smallest;
     do
     {
-        j = i;
-        if (rightChild(i) <= m->ultimo && m->vector[rightChild(i)] < m->vector[i]) i = rightChild(i); 
-        if (leftChild(i) <= m->ultimo && m->vector[leftChild(i)] < m->vector[i]) i = leftChild(i);
-        swap(m->vector[i], m->vector[j]);
+        smallest = i;
+        if (rightChild(i) <= m->ultimo && m->vector[rightChild(i)] < m->vector[i]) smallest = rightChild(i);
+        if (leftChild(i) <= m->ultimo && m->vector[leftChild(i)] < m->vector[i]) smallest = leftChild(i);
+
+        if (smallest!=i)
+        {
+            swap(&m->vector[i], &m->vector[smallest]);
+            hundir(m, smallest);
+        }
     }
-    while (j!=i);
+    while (smallest != i);
 }
-void crearMonticulo(int * v, pmonticulo m) 
+void crearMonticulo(int * v, int n, pmonticulo m)
 { 
     int i;
+    for (i = 0; i < n; i++) m->vector[i] = v[i];
+    m->ultimo = n-1;
+
     for (i = m->ultimo / 2; i >= 0; i--) hundir(m, i);
 }
 int quitarMenor(pmonticulo m)
 {
     int x;
 
-    if (esMonticuloVacio(m)) return;
+    if (esMonticuloVacio(m)) return -1;
     
     x = m->vector[0];
     m->vector[0] = m->vector[m->ultimo];
@@ -240,7 +248,7 @@ void testQuitarMenor()
     initializeRandom(v, n);
     crearMonticulo(v, n, m);
 
-    printf("---------------------\n  TEST QUITAR MENOR\n---------------------\nVector inicial aleatorio: ");
+    printf("---------------------\n  TEST QUITAR MENOR\n---------------------\nVector inicial del montículo: ");
     printArray(m->vector, size(m));
     printf("\nElemento devuelto: %d\nVector final: ", quitarMenor(m));
     printArray(m->vector, size(m));
