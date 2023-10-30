@@ -33,6 +33,7 @@ void initializeDesc(int * v, int n);
 void printArray(int * v, int n);
 void tableTimes(void (*initialize) (int*, int), double n1, double n2, double n3);
 //heap info
+bool esMonticuloVacio(pmonticulo m);
 int leftChild(int i);
 int rightChild(int i);
 int size(pmonticulo m);
@@ -40,7 +41,9 @@ int size(pmonticulo m);
 double getTimesCreate(int n);
 double getTimesOrder(int n, void (*initialize) (int*, int));
 //heap functions
-void crearMonticulo(int * v, int n, pmonticulo m);
+void swap(int * a, int * b);
+int hundir(pmonticulo m, int i);
+void crearMonticulo(int * v, pmonticulo m);
 int quitarMenor(pmonticulo m);
 void ordenarPorMonticulos(int * v, int n);
 //tests
@@ -104,6 +107,7 @@ void tableTimes(void (*initialize) (int*, int), double n1, double n2, double n3)
     }    
 }
 
+bool esMonticuloVacio(pmonticulo m) { return !m->ultimo; }
 int leftChild(int i) { return 2*i+1; }
 int rightChild(int i) { return 2*i+2; }
 int size(pmonticulo m) { return m->ultimo + 1; }
@@ -170,21 +174,42 @@ double getTimesOrder(int n, void (*initialize) (int*, int))
     return t;    
 }
 
-void crearMonticulo(int * v, int n, pmonticulo m) 
+void swap(int * a, int * b)
+{
+    int aux = *a;
+    *a = *b;
+    *b = aux;
+}
+int hundir(pmonticulo m, int i)
+{
+    int j;
+    do
+    {
+        j = i;
+        if (rightChild(i) <= m->ultimo && m->vector[rightChild(i)] < m->vector[i]) i = rightChild(i); 
+        if (leftChild(i) <= m->ultimo && m->vector[leftChild(i)] < m->vector[i]) i = leftChild(i);
+        swap(m->vector[i], m->vector[j]);
+    }
+    while (j!=i);
+}
+void crearMonticulo(int * v, pmonticulo m) 
 { 
-    int i; 
-    for (i = 0; i <= (m->ultimo = n - 1); i++) m->vector[i] = v[i]; 
+    int i;
+    for (i = m->ultimo / 2; i >= 0; i--) hundir(m, i);
 }
 int quitarMenor(pmonticulo m)
 {
-    int i, minpos = 0, min = m->vector[0]; 
-    //obtengo el menor
-    for (i = 0; i < size(m); i++) if (m->vector[i] < m->vector[minpos]) { minpos = i; min = m->vector[i]; }
-    //desde el menor desplazo los elementos borrandolo
-    for (i = minpos; i < m->ultimo; i++) m->vector[i] = m->vector[i+1];
-    //reduzco el tamaño en 1
+    int x;
+
+    if (esMonticuloVacio(m)) return;
+    
+    x = m->vector[0];
+    m->vector[0] = m->vector[m->ultimo];
     m->ultimo--;
-    return min;
+
+    if (m->ultimo > 0) hundir(m, 0);
+
+    return x;
 }
 void ordenarPorMonticulos(int * v, int n)
 {
