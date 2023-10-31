@@ -29,7 +29,7 @@ double microsegundos();
 void initializeRandom(int * v, int n);
 void initializeAsc(int * v, int n);
 void initializeDesc(int * v, int n);
-//print
+//prints
 void printArray(int * v, int n);
 void tableTimes(void (*initialize) (int*, int), double n1, double n2, double n3);
 //heap info
@@ -53,7 +53,7 @@ void testExecutionTime();
 void testOrdenarPorMonticulos();
 void testComplexities();
 
-
+//rand
 void inicializar_semilla() { srand(time(NULL)); }
 double microsegundos()
 {
@@ -63,6 +63,7 @@ double microsegundos()
     return (t.tv_usec + t.tv_sec * 1000000.);
 }
 
+//initializations
 void initializeRandom(int * v, int n)
 {
     int i, m = 2*n+1;
@@ -81,6 +82,7 @@ void initializeDesc(int * v, int n)
         v[i] = n - i;
 }
 
+//prints
 void printArray(int * v, int n)
 {
     int i;
@@ -107,11 +109,13 @@ void tableTimes(void (*initialize) (int*, int), double n1, double n2, double n3)
     }    
 }
 
+//heap info
 bool esMonticuloVacio(pmonticulo m) { return m->ultimo==-1; }
 int leftChild(int i) { return 2*i+1; }
 int rightChild(int i) { return 2*i+2; }
 int size(pmonticulo m) { return m->ultimo + 1; }
 
+//times
 double getTimesCreate(int n)
 {
     double t, t_init;
@@ -174,6 +178,7 @@ double getTimesOrder(int n, void (*initialize) (int*, int))
     return t;    
 }
 
+//heap functions
 void swap(int * a, int * b)
 {
     int aux = *a;
@@ -186,23 +191,31 @@ void hundir(pmonticulo m, int i)
     do
     {
         smallest = i;
+        //si alguno de los hijos es menor
         if (rightChild(i) <= m->ultimo && m->vector[rightChild(i)] < m->vector[i]) smallest = rightChild(i);
         if (leftChild(i) <= m->ultimo && m->vector[leftChild(i)] < m->vector[i]) smallest = leftChild(i);
 
+        //se activara este if
         if (smallest!=i)
         {
+            /*se intercambia el hijo con el padre y el que queda abajo se hunde con sus 
+            respectivos hijos para evitar superposiciones incorrectas*/
             swap(&m->vector[i], &m->vector[smallest]);
+            //realmente se hunde el mayor, pero se intercambiaron las posiciones
             hundir(m, smallest);
         }
     }
+    //mientras que el trío de nodos no sea válido (padre > alguno de los hijos)
     while (smallest != i);
 }
 void crearMonticulo(int * v, int n, pmonticulo m)
-{ 
+{
     int i;
+    //se copia el vector
     for (i = 0; i < n; i++) m->vector[i] = v[i];
     m->ultimo = n-1;
 
+    //y se hunden las posiciones desde el ultimo padre (ultimo elemento no hoja) hasta el padre absoluto
     for (i = m->ultimo / 2; i >= 0; i--) hundir(m, i);
 }
 int quitarMenor(pmonticulo m)
@@ -211,23 +224,30 @@ int quitarMenor(pmonticulo m)
 
     if (esMonticuloVacio(m)) return -1;
     
+    /*se guarda el menor número, se sobreescribe poniendo en la 
+    primera posición el que era el último y se reduce el tamaño*/
     x = m->vector[0];
     m->vector[0] = m->vector[m->ultimo];
     m->ultimo--;
 
+    //como el primer elemento no es válido como padre (estaba en la última posición), se hunde
     if (m->ultimo > 0) hundir(m, 0);
 
+    //se devuelve el que era el menor
     return x;
 }
 void ordenarPorMonticulos(int * v, int n)
 {
+    //se crea un montículo en base al vector
     pmonticulo m = MALLOC;
     crearMonticulo(v, n, m);
     int i;
 
+    //y se va quitando del monticulo el menor elemento en cada iteración y se añade al vector
     for (i = 0; i < n; i++) v[i] = quitarMenor(m);
 }
 
+//tests
 void testCrearMonticulo()
 {
     pmonticulo m = MALLOC;
