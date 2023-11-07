@@ -11,9 +11,17 @@ let rec length = function
   [] -> 0 | 
   _::l -> 1 + length l;;
 
-let compare_lengths l1 l2 = length l1 - length l2;;
+let rec compare_lengths l1 l2 = match (l1, l2) with 
+  ([], []) -> 0 |
+  ([], _) -> 1 |
+  (_, []) -> -1 |
+  (hdl1::tll1, hdl2::tll2) -> compare_lengths tll1 tll2;;
 
-let compare_lengths_with l s = length l - s;;
+let compare_length_with l s = 
+  let len = length l in
+  if len > s then 1
+  else if len < s then -1
+  else 0;;
 
 let init n f = 
   let rec aux i n f = 
@@ -62,25 +70,86 @@ let split lp =
     else (snd (hd lp))::[] in
   (l1 lp, l2 lp);;
 
-let combine l1 l2 =
+let rec combine l1 l2 =
+  if (length l1) > 1 then
+    (hd l1, hd l2)::(combine (tl l1) (tl l2))
+  else (hd l1, hd l2)::[];;
+
+let rec map f l = match l with
+  [] -> [] |
+  hdl::tll -> (f hdl)::(map f tll);;
+
+let rec map2 f l1 l2 = 
+  if (length l1) > 1 then
+    (f (hd l1) (hd l2))::(map2 f (tl l1) (tl l2))
+  else (f (hd l1) (hd l2))::[];;
+
+let rev_map f l = rev (map f l);;
+
+let rec for_all f l = match l with
+  [] -> true |
+  hdl::tll -> (f hdl) && (for_all f tll);;
+
+let rec exists f l = match l with
+  [] -> false |
+  hdl::tll -> (f hdl) || (exists f tll);;
+
+let rec mem x l = match l with 
+  [] -> false |
+  hdl::tll -> x = hdl || (mem x (tll));;
+
+let rec find f l = 
+  if (length l) = 1 then raise(Failure "Not_found")
+  else if f (hd l) then hd l 
+  else find f (tl l);;
+
+let rec filter f l = match l with
+  [] -> [] |
+  hdl::tll -> if (f hdl) then hdl::(filter f tll)
+              else filter f tll;;
+
+let find_all = filter;;
+
+let partition f l = 
+  let rec filter_non f l = match l with
+    [] -> [] |
+    hdl::tll -> if not (f hdl) then hdl::(filter_non f tll)
+                else filter_non f tll in
+  (filter f l, filter_non f l);;
   
+let rec fold_left f init l = 
+  if (length l) != 1 then 
+    fold_left f (f init (hd l)) (tl l)
+  else f init (hd l);;
 
+let rec fold_right f init l = 
+  if (length l) != 1 then 
+    f (fold_right f init (tl l)) (hd l)
+  else f init (hd l);;
 
+let rec assoc x l = match l with 
+  [] -> raise(Failure "Not_found") |
+  hdl::tll -> if fst hdl = x then snd hdl 
+              else assoc x tll;;
 
+let rec mem_assoc x l = match l with 
+  [] -> false |
+  hdl::tll -> if fst hdl = x then true
+  else mem_assoc x tll;;
 
+let rec remove_assoc x l = match l with 
+  [] -> [] |
+  hdl::tll -> if fst hdl = x then remove_assoc x tll 
+              else hdl::(remove_assoc x tll);;
 
-
-
-
-
-
-
-
-
+(*
 let a = [1; 2; 3; 4; 5];;
 let b = [10; 9; 8; 7; 6; 5; 4; 3; 2; 1; 0];;
+let c = [6; 8; 1; 10; 11];;
+let par = [2; 4; 6; 8; 10];;
+let impar = [1; 3; 5; 7; 9];;
 let ll = [a; b];;
 
 let lp = [(1, 2); (3, 4); (5, 6); (7, 8)];;
-
-let n = hd a;;
+let lp2 = [(1, 19); (3, 35); (5, 7); (7, 11)];;
+*)
