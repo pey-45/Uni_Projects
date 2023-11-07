@@ -66,7 +66,7 @@ let split lp =
     else (fst (hd lp))::[] in
   let rec l2 lp = 
     if (length lp) > 1 then 
-      snd (hd lp)::(l1 (tl lp)) 
+      snd (hd lp)::(l2 (tl lp)) 
     else (snd (hd lp))::[] in
   (l1 lp, l2 lp);;
 
@@ -122,10 +122,10 @@ let rec fold_left f init l =
     fold_left f (f init (hd l)) (tl l)
   else f init (hd l);;
 
-let rec fold_right f init l = 
+let rec fold_right f l init = 
   if (length l) != 1 then 
-    f (fold_right f init (tl l)) (hd l)
-  else f init (hd l);;
+    f (hd l) (fold_right f (tl l) init)
+  else f (hd l) init;;
 
 let rec assoc x l = match l with 
   [] -> raise(Failure "Not_found") |
