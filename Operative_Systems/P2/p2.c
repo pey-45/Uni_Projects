@@ -12,6 +12,7 @@ int main()
 	tList open_files;
 	tList memory;
 	tList shared_memory;
+	tList mmap_memory;
 	struct utsname unameData;
 	uname(&unameData);
 
@@ -19,13 +20,14 @@ int main()
 	if (!username)
 	{
     	perror("No se pudo obtener el nombre de usuario\n");
-		f_quit(&command_history, &open_files, &memory, &shared_memory);
+		f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory);
 	}
 
 	createEmptyList(&command_history);
 	createEmptyList(&open_files);
 	createEmptyList(&memory);
 	createEmptyList(&shared_memory);
+	createEmptyList(&mmap_memory);
 	//se añaden los elementos por defecto a la lista de archivos abiertos
 	insertItem("Descriptor: 0 -> entrada estandar O_RDWR", NULL, &open_files);
 	insertItem("Descriptor: 1 -> salida estandar O_RDWR", NULL, &open_files);
@@ -37,7 +39,7 @@ int main()
 		if (!getcwd(dir, MAX_PROMPT))
 		{
 			perror("No se pudo obtener el directorio actual.\n");
-			f_quit(&command_history, &open_files, &memory, &shared_memory);
+			f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory);
 		}
 
 		printf("\033[1;34m%s@%s\033[1;37m:\033[1;33m%s\033[0m$ ", username, unameData.nodename, dir);
@@ -53,6 +55,6 @@ int main()
 		insertItem(command, NULL, &command_history);
 		//se trocea la cadena y se procesa como array de cadenas
 		TrocearCadena(command, full_command);
-		processCommand(full_command, &command_history, &open_files, &memory, &shared_memory);
+		processCommand(full_command, &command_history, &open_files, &memory, &shared_memory, &mmap_memory);
 	}
 }

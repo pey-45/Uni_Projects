@@ -23,6 +23,9 @@ char *getLastNamePath(char * dir);
 void initializeString(char * string);
 bool isDir(char * _dir);
 void printList(tList * L);
-void * getShm (key_t clave, size_t tam);
+void *getShm (key_t clave, size_t tam);
+void *mmap_file(char * fichero, int protection, tList * mmap_memory);
+ssize_t writeFile(char *f, void *p, size_t cont,int overwrite);
+ssize_t readFile(char *f, void *p, size_t cont);
 
 #endif //AUX_FUNCTIONS_H

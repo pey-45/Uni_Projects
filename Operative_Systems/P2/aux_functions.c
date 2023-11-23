@@ -347,7 +347,7 @@ void printList(tList * L)
     for (pos = first(*L); pos != NULL; pos = next(pos)) printf("%s\n", getItem(pos));
 }
 
-void * getShm (key_t clave, size_t tam)
+void *getShm (key_t clave, size_t tam)
 {
     void * p;
     int aux,id,flags=0777;
@@ -368,4 +368,71 @@ void * getShm (key_t clave, size_t tam)
     }
     shmctl (id,IPC_STAT,&s);
     return (p);
+}
+
+void *mmap_file (char * fichero, int protection, tList * mmap_memory)
+{
+    time_t t; time(&t); struct tm *local = localtime(&t);
+
+    char *string = MALLOC, *ptr_string = MALLOC, *aux = MALLOC;
+    int df, map=MAP_PRIVATE,modo=O_RDONLY;
+    struct stat s;
+    void *ptr;
+
+    if (protection&PROT_WRITE)
+          modo=O_RDWR;
+    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+          return NULL;
+    if ((ptr=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
+           return NULL;  
+
+    strftime(aux, MAX_PROMPT, "%b %d %H:%M", local);
+    sprintf(ptr_string, "%p", (void *)ptr);
+    snprintf(string, MAX_PROMPT, "%20s%17ld%14s %s  (descriptor %d)", ptr_string, (long)s.st_size, aux, fichero, df); 
+    insertItem(string, NULL, mmap_memory);
+
+    return ptr;
+}
+
+ssize_t writeFile(char *f, void *p, size_t cont,int overwrite)
+{
+    ssize_t  n;
+    int df,aux, flags= O_CREAT | O_EXCL | O_WRONLY;
+
+    if (overwrite)
+        flags=O_CREAT | O_WRONLY | O_TRUNC;
+
+    if ((df=open(f,flags,0777))==-1)
+	    return -1;
+
+    if ((n=write(df,p,cont))==-1)
+    {
+	    aux=errno;
+	    close(df);
+	    errno=aux;
+	    return -1;
+    }
+    close (df);
+    return n;
+}
+
+ssize_t readFile(char *f, void *p, size_t cont)
+{
+    struct stat s;
+    ssize_t  n;  
+    int df,aux;
+
+    if (stat (f,&s)==-1 || (df=open(f,O_RDONLY))==-1)
+	    return -1;     
+    if (cont==-1)   /* si pasamos -1 como bytes a leer lo leemos entero*/
+	    cont=s.st_size;
+    if ((n=read(df,p,cont))==-1)
+    {
+	    aux=errno;
+	    close(df);
+	    errno=aux;
+	    return -1;
+    }
+    close (df);
+    return n;
 }

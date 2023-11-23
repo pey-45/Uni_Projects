@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/mman.h>
 
 #define MAX_PROMPT 16384
 #define MALLOC_PTR malloc(MAX_PROMPT*sizeof(char*))

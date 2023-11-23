@@ -47,7 +47,7 @@ void f_hist(char ** command, tList * command_history)
     else printHistUntil(listLength(*command_history), *command_history);
 }
 
-void f_command(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory) 
+void f_command(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
     int current_index = 1;
@@ -72,7 +72,7 @@ void f_command(char ** command, tList * command_history, tList * open_files, tLi
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
         TrocearCadena(string, strings);
-        processCommand(strings, command_history, open_files, memory, shared_memory);
+        processCommand(strings, command_history, open_files, memory, shared_memory, mmap_memory);
     } 
     else printf("No hay elemento %s en el histórico\n", command[1]);
 
@@ -257,7 +257,15 @@ void f_help(char ** command)
     else printf("%s no encontrado\n", command[1]);
 }
 
-void f_quit(tList * command_history, tList * open_files, tList * memory, tList * shared_memory) { deleteList(command_history); deleteList(open_files); deleteList(memory); deleteList(shared_memory); exit(0); }
+void f_quit(tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
+{ 
+    deleteList(command_history); 
+    deleteList(open_files); 
+    deleteList(memory); 
+    deleteList(shared_memory); 
+    deleteList(mmap_memory); 
+    exit(0); 
+}
 
 void f_invalid() { perror("No ejecutado"); }
 
@@ -421,14 +429,17 @@ void f_malloc(char ** command, tList * memory)
     void *ptr;
     char *aux = MALLOC, *item = MALLOC, **full_item = MALLOC_PTR, *ptr_string = MALLOC;
     tPosL pos;
-    time_t t; time(&t); struct tm *local = localtime(&t);
+    time_t t; 
+    time(&t); 
+    struct tm *local = localtime(&t);
 
     if (!command[1] || 
         (!isDigitString(command[1]) && strcmp(command[1], "-free")) || 
         (!strcmp(command[1], "-free") && (!command[2] || !isDigitString(command[2])))) 
         { 
             printf("******Lista de bloques asignados malloc para el proceso %ld\n", (long)getpid()); 
-            printList(memory); return;
+            printList(memory); 
+            return;
         }
 
     if (strcmp(command[1], "-free")) 
@@ -438,6 +449,7 @@ void f_malloc(char ** command, tList * memory)
         strftime(aux, MAX_PROMPT, "%b %d %H:%M", local);
         snprintf(item, MAX_PROMPT, "%20s%17s%14s%7s", ptr_string, command[1], aux, "malloc");
         insertItem(item, NULL, memory);
+        printf("Asignados %s bytes en %s\n", command[1], ptr_string);
     }
     else
     {
@@ -485,7 +497,8 @@ void f_shared(char ** command, tList * shared_memory)
         else 
         { 
             printf("******Lista de bloques asignados shared para el proceso %ld\n", (long)getpid());
-            printList(shared_memory); return; 
+            printList(shared_memory); 
+            return; 
         }
     }
 
@@ -502,7 +515,7 @@ void f_shared(char ** command, tList * shared_memory)
             snprintf(item, MAX_PROMPT, "%20s%17s%14s%13s%d%c", ptr_string, command[3], aux, "shared (key ", key, ')');
             insertItem(item, NULL, shared_memory);
         }
-        else printf ("Imposible asignar memoria compartida clave %lu:%s\n", (unsigned long)key, strerror(errno));
+        else printf ("Imposible asignar memoria compartida clave %lu: %s\n", (unsigned long)key, strerror(errno));
     }
     else if (!strcmp(command[1], "-free")) 
     {
@@ -515,7 +528,7 @@ void f_shared(char ** command, tList * shared_memory)
             if (!strcmp(full_item[7], command[2]))
             {
                 if ((ptr_free=shmget(key, (size_t)atoi(full_item[1]), PERMISSIONS)) && shmctl(ptr_free, IPC_RMID, NULL) == -1)
-                    { perror("Error al liberar la memoria compartida"); return; }
+                { perror("Error al liberar la memoria compartida"); return; }
             }
             else continue;
 
@@ -526,12 +539,192 @@ void f_shared(char ** command, tList * shared_memory)
     }
     else if (!strcmp(command[1], "-delkey")) 
     {
-        return;
+        if ((key= (key_t)strtoul(command[2],NULL,10)) == IPC_PRIVATE)
+        { printf ("delkey necesita clave_valida\n"); return; }
+        if ((ptr_free=shmget(key,0,0666))==-1)
+        { perror ("shmget: imposible obtener memoria compartida"); return; }
+        if (shmctl(ptr_free,IPC_RMID,NULL)==-1)
+            perror ("shmctl: imposible eliminar id de memoria compartida\n");
     }
     else fprintf(stderr, "Imposible asignar memoria compartida clave %s: %s\n", command[1], strerror(errno));
 }
 
-void processCommand(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory)
+void f_mmap(char ** command, tList * mmap_memory)
+{
+    int i, protection = 0, file_size;
+    void *ptr;
+    tPosL pos;
+    char *string = MALLOC, **strings = MALLOC_PTR;
+
+    if (!command[1]) 
+    { 
+        printf("******Lista de bloques asignados mmap para el proceso %ld\n", (long)getpid());
+        printList(mmap_memory); 
+        return;
+    }
+
+    if (strcmp(command[1], "-free"))
+    {
+        for (i = 0; i < 3 && command[2] && command[2][i]; i++)
+        {
+            if (command[2][i]=='r') protection|=PROT_READ;
+            if (command[2][i]=='w') protection|=PROT_WRITE;
+            if (command[2][i]=='x') protection|=PROT_EXEC;
+        }
+
+        if ((ptr = mmap_file(command[1], protection, mmap_memory)))
+            printf("Fichero %s mapeado en %p\n", command[1], ptr);
+        else
+            perror("Imposible mapear fichero");
+    }
+    else
+    {
+        for (pos = first(*mmap_memory); pos != NULL; pos = next(pos))
+        {
+            strcpy(string, getItem(pos));
+            TrocearCadena(string, strings);
+            if (!strcmp(strings[5], command[2]))
+            {
+                file_size = atoi(strings[1]);
+                break;
+            }
+        }
+
+        if (!pos) 
+        {
+            printf("Fichero %s no mapeado\n", command[2]);
+            return;
+        }
+
+        unsigned long long int memdir = strtoull(strings[0], NULL, 16);
+        ptr = (void*)memdir;
+        munmap(ptr, file_size);
+        
+        deleteAtPosition(pos, mmap_memory);
+    }
+}
+
+void f_read(char ** command)
+{
+    int cnt = 0;
+    void *ptr;
+    struct stat attr;
+    unsigned long long memdir;
+
+    if (!command[2]) { printf("Faltan parámetros\n"); return; }
+
+    if (stat(command[1], &attr)) { printf("No se ha podido hacer stat\n"); return; }            
+
+    if (!command[3]) cnt = attr.st_size;
+    else if (isDigitString(command[3])) cnt = atoi(command[3]);
+
+    memdir = strtoull(command[2], NULL, 16);
+    ptr = (void*)memdir;
+
+    if (readFile(command[1], ptr, cnt) == -1)
+        perror("Imposible leer fichero");
+    else
+        printf("Leídos %d bytes de %s en %s\n", cnt, command[1], command[2]);
+}
+
+void f_write(char ** command)
+{    
+    int cnt = 0;
+    void *ptr;
+    bool o;
+    unsigned long long memdir;
+
+    if ((!command[1] ||
+         (command[1] && !strcmp(command[1], "-o") && !command[4])) ||
+         (command[1] && strcmp(command[1], "-o") && !command[3])) 
+         { printf("Faltan parámtros\n"); return; }
+
+    o = !strcmp(command[1], "-o");
+
+    cnt = atoi(command[o? 4:3]);
+
+    memdir = strtoull(command[o? 3:2], NULL, 16);
+    ptr = (void*)memdir;
+
+    if (writeFile(command[o? 2:1], ptr, cnt, o)==-1)
+        perror("Imposible escribir fichero");
+    else 
+        printf("Escritos %s bytes en %s desde %s\n", command[o? 4:3], command[o? 2:1], command[o? 3:2]);
+}
+
+void f_memdump(char ** command)
+{
+    int cnt = 25, i, j;
+    char *buffer;
+    unsigned long long memdir;
+
+    if (!command[1]) return;
+
+    if (command[2] && isDigitString(command[2])) 
+        cnt = atoi(command[2]);
+    
+    memdir = strtoull(command[1], NULL, 16);
+
+    buffer = (char*)malloc(cnt);
+    if (!buffer) { perror("Error al asignar memoria"); return; }
+
+    for (i = 0; i < cnt; i++) 
+    {
+        if ((memdir + i) < memdir) 
+        {
+            fprintf(stderr, "Dirección de memoria fuera de límites.\n");
+            free(buffer);
+            return;
+        }
+        buffer[i] = *((char*)(memdir + i));
+    }
+
+    for (i = 0; i*25 < cnt; i++) 
+    {
+        for (j = 0; j < 25 && i*25+j < cnt; j++) 
+        {
+            if (!buffer[i*25+j]) printf("   ");
+            else printf("%3c", buffer[i*25+j]);
+        }
+        printf("\n");  
+
+        for (j = 0; j < 25 && i*25+j < cnt; j++) 
+        {
+            if (!buffer[i*25+j]) printf(" 00");
+            else printf("%3X", buffer[i*25+j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+void f_memfill(char ** command)
+{
+    int cnt = 128, i, byte = 41;
+    char *buffer;
+    unsigned long long memdir;
+
+    if (!command[1]) return;
+
+    if (command[2] && isDigitString(command[2])) 
+        cnt = atoi(command[2]);
+
+    if (command[3] && isDigitString(command[3]))
+        byte = atoi(command[3]);
+
+    memdir = strtoull(command[1], NULL, 16);
+    buffer = memdir;
+
+    for (i = 0; i < cnt; i++) 
+        buffer[i] = byte;
+
+    printf("Llenando %d bytes de memoria con el byte %c(%d) a partir de la dirección %s", cnt, byte, byte, command[1]);
+}
+
+
+
+
+void processCommand(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
 {
     //se ejecuta el comando correspondiente a command
     if (!command[0]) return;
@@ -540,14 +733,14 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "chdir")) f_chdir(command);
     else if (!strcmp(command[0], "date") || !strcmp(command[0], "time")) f_time(command);
     else if (!strcmp(command[0], "hist")) f_hist(command, command_history);
-    else if (!strcmp(command[0], "command")) f_command(command, command_history, open_files, memory, shared_memory);
+    else if (!strcmp(command[0], "command")) f_command(command, command_history, open_files, memory, shared_memory, mmap_memory);
     else if (!strcmp(command[0], "open")) f_open(command, open_files, true);
     else if (!strcmp(command[0], "close")) f_close(command, open_files);
     else if (!strcmp(command[0], "dup")) f_dup(command, open_files);
     else if (!strcmp(command[0], "listopen")) f_listopen(command, *open_files);
     else if (!strcmp(command[0], "infosys")) f_infosys();
     else if (!strcmp(command[0], "help")) f_help(command);
-    else if (!strcmp(command[0], "quit") || !strcmp(command[0], "exit") || !strcmp(command[0], "bye")) f_quit(command_history, open_files, memory, shared_memory);
+    else if (!strcmp(command[0], "quit") || !strcmp(command[0], "exit") || !strcmp(command[0], "bye")) f_quit(command_history, open_files, memory, shared_memory, mmap_memory);
     else if (!strcmp(command[0], "clear")) system("clear");
     else if (!strcmp(command[0], "create")) f_create(command, open_files);
     else if (!strcmp(command[0], "stat")) f_stat(command);
@@ -555,11 +748,11 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "delete") || !strcmp(command[0], "deltree")) f_delete(command);
     else if (!strcmp(command[0], "malloc")) f_malloc(command, memory);
     else if (!strcmp(command[0], "shared")) f_shared(command, shared_memory);
-    else if (!strcmp(command[0], "mmap")) return;
-    else if (!strcmp(command[0], "read")) return;
-    else if (!strcmp(command[0], "write")) return;
-    else if (!strcmp(command[0], "memdump")) return;
-    else if (!strcmp(command[0], "memfill")) return;
+    else if (!strcmp(command[0], "mmap")) f_mmap(command, mmap_memory);
+    else if (!strcmp(command[0], "read")) f_read(command);
+    else if (!strcmp(command[0], "write")) f_write(command);
+    else if (!strcmp(command[0], "memdump")) f_memdump(command);
+    else if (!strcmp(command[0], "memfill")) f_memfill(command);
     else if (!strcmp(command[0], "mem")) return; 
     else if (!strcmp(command[0], "recurse")) return; 
     else f_invalid();
