@@ -18,3 +18,6 @@ clean:
 	
 ref:
 	./shell.out
+
+ref-valgrind:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./shell.out

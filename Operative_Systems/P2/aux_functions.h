@@ -27,5 +27,9 @@ void *getShm (key_t clave, size_t tam);
 void *mmap_file(char * fichero, int protection, tList * mmap_memory);
 ssize_t writeFile(char *f, void *p, size_t cont,int overwrite);
 ssize_t readFile(char *f, void *p, size_t cont);
+void doMemPmap();
+void recurse(int n);
+
+
 
 #endif //AUX_FUNCTIONS_H

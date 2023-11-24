@@ -382,15 +382,22 @@ void *mmap_file (char * fichero, int protection, tList * mmap_memory)
     if (protection&PROT_WRITE)
           modo=O_RDWR;
     if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
-          return NULL;
+    {
+        freeAll(3, string, ptr_string, aux);
+        return NULL;
+    }
     if ((ptr=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
-           return NULL;  
+    {
+        freeAll(3, string, ptr_string, aux);
+        return NULL;  
+    }
 
     strftime(aux, MAX_PROMPT, "%b %d %H:%M", local);
     sprintf(ptr_string, "%p", (void *)ptr);
     snprintf(string, MAX_PROMPT, "%20s%17ld%14s %s  (descriptor %d)", ptr_string, (long)s.st_size, aux, fichero, df); 
     insertItem(string, NULL, mmap_memory);
 
+    freeAll(3, string, ptr_string, aux);
     return ptr;
 }
 
@@ -435,4 +442,50 @@ ssize_t readFile(char *f, void *p, size_t cont)
     }
     close (df);
     return n;
+}
+
+void doMemPmap() /*sin argumentos*/
+ { 
+    pid_t pid;       /*hace el pmap (o equivalente) del proceso actual*/
+    char elpid[32];
+    char *argv[4]={"pmap",elpid,NULL};
+   
+    sprintf (elpid,"%d", (int) getpid());
+    if ((pid=fork())==-1)
+    {
+        perror ("Imposible crear proceso");
+        return;
+    }
+
+    if (pid==0)
+    { /*proceso hijo*/
+        if (execvp(argv[0],argv)==-1)
+            perror("cannot execute pmap (linux, solaris)");
+      
+        argv[0]="vmmap"; argv[1]="-interleave"; argv[2]=elpid;argv[3]=NULL;
+            if (execvp(argv[0],argv)==-1) /*probamos vmmap Mac-OS*/
+                perror("cannot execute vmmap (Mac-OS)");          
+      
+        argv[0]="procstat"; argv[1]="vm"; argv[2]=elpid; argv[3]=NULL;   
+            if (execvp(argv[0],argv)==-1)/*No hay pmap, probamos procstat FreeBSD */
+                perror("cannot execute procstat (FreeBSD)");
+         
+        argv[0]="procmap",argv[1]=elpid;argv[2]=NULL;    
+            if (execvp(argv[0],argv)==-1)  /*probamos procmap OpenBSD*/
+                perror("cannot execute procmap (OpenBSD)");
+         
+        exit(1);
+    }
+
+    waitpid (pid,NULL,0);
+}
+
+void recurse(int n)
+{
+    char automatico[MAX_PROMPT];
+    static char estatico[MAX_PROMPT];
+
+    printf ("parametro:%3d(%p) array %p, arr estatico %p\n",n,&n,automatico, estatico);
+
+    if (n>0) recurse(n-1);
 }

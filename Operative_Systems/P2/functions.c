@@ -2,6 +2,20 @@
 
 #define PERMISSIONS 0644 //para memoria compartida
 
+int globalvar_noinit1;
+int globalvar_noinit2;
+int globalvar_noinit3;
+int globalvar_init1 = 0;
+int globalvar_init2 = 0;
+int globalvar_init3 = 0;
+
+static int staticvar_noinit1;
+static int staticvar_noinit2;
+static int staticvar_noinit3;
+static int staticvar_init1 = 0;
+static int staticvar_init2 = 0;
+static int staticvar_init3 = 0;
+
 void f_authors(char ** command)
 {
     //si tiene de argumento -l imprime los logins
@@ -432,6 +446,7 @@ void f_malloc(char ** command, tList * memory)
     time_t t; 
     time(&t); 
     struct tm *local = localtime(&t);
+    unsigned long long memdir;
 
     if (!command[1] || 
         (!isDigitString(command[1]) && strcmp(command[1], "-free")) || 
@@ -439,6 +454,7 @@ void f_malloc(char ** command, tList * memory)
         { 
             printf("******Lista de bloques asignados malloc para el proceso %ld\n", (long)getpid()); 
             printList(memory); 
+            freeAll(4, aux, item, full_item, ptr_string);
             return;
         }
 
@@ -459,14 +475,16 @@ void f_malloc(char ** command, tList * memory)
             TrocearCadena(aux, full_item);
             if (!strcmp(full_item[1], command[2]))
             {
-                unsigned long long int memdir = strtoull(full_item[0], NULL, 16);
+                memdir = strtoull(full_item[0], NULL, 16);
                 ptr = (void*)memdir;
-                free(ptr);
+                if (ptr) free(ptr);
                 deleteAtPosition(pos, memory);
+                freeAll(4, aux, item, full_item, ptr_string);
                 return;
             }
         }
     }
+    freeAll(4, aux, item, full_item, ptr_string);
 }
 
 void f_shared(char ** command, tList * shared_memory)
@@ -479,10 +497,12 @@ void f_shared(char ** command, tList * shared_memory)
     tPosL pos;
 
 
-    if (!command[1]) 
+    if (!command[1] || !command[2]) 
     { 
         printf("******Lista de bloques asignados shared para el proceso %ld\n", (long)getpid());
-        printList(shared_memory); return;
+        printList(shared_memory); 
+        freeAll(4, item, aux, ptr_string, full_item);
+        return;
     }
     for (i = 1; command[i]!=NULL; i++)
     {
@@ -498,6 +518,7 @@ void f_shared(char ** command, tList * shared_memory)
         { 
             printf("******Lista de bloques asignados shared para el proceso %ld\n", (long)getpid());
             printList(shared_memory); 
+            freeAll(4, item, aux, ptr_string, full_item);
             return; 
         }
     }
@@ -506,7 +527,12 @@ void f_shared(char ** command, tList * shared_memory)
     {
         key=(key_t) strtoul(command[2],NULL,10);
         size=(size_t) strtoul(command[3],NULL,10);
-        if (!size) { printf ("No se asignan bloques de 0 bytes\n"); return; }
+        if (!size) 
+        { 
+            printf ("No se asignan bloques de 0 bytes\n"); 
+            freeAll(4, item, aux, ptr_string, full_item);
+            return; 
+        }
         if ((ptr=getShm(key, size)))
         {		    
             sprintf(ptr_string, "%p", (void *)ptr);
@@ -528,25 +554,40 @@ void f_shared(char ** command, tList * shared_memory)
             if (!strcmp(full_item[7], command[2]))
             {
                 if ((ptr_free=shmget(key, (size_t)atoi(full_item[1]), PERMISSIONS)) && shmctl(ptr_free, IPC_RMID, NULL) == -1)
-                { perror("Error al liberar la memoria compartida"); return; }
+                { 
+                    perror("Error al liberar la memoria compartida"); 
+                    freeAll(4, item, aux, ptr_string, full_item);
+                    return; 
+                }
             }
             else continue;
 
             printf("Memoria compartida liberada correctamente.\n");
             deleteAtPosition(pos, shared_memory);
+            freeAll(4, item, aux, ptr_string, full_item);
             return;
         }
     }
     else if (!strcmp(command[1], "-delkey")) 
     {
         if ((key= (key_t)strtoul(command[2],NULL,10)) == IPC_PRIVATE)
-        { printf ("delkey necesita clave_valida\n"); return; }
+        { 
+            printf ("delkey necesita clave_valida\n"); 
+            freeAll(4, item, aux, ptr_string, full_item);
+            return; 
+        }
         if ((ptr_free=shmget(key,0,0666))==-1)
-        { perror ("shmget: imposible obtener memoria compartida"); return; }
+        { 
+            perror ("shmget: imposible obtener memoria compartida"); 
+            freeAll(4, item, aux, ptr_string, full_item);
+            return; 
+        }
         if (shmctl(ptr_free,IPC_RMID,NULL)==-1)
             perror ("shmctl: imposible eliminar id de memoria compartida\n");
     }
     else fprintf(stderr, "Imposible asignar memoria compartida clave %s: %s\n", command[1], strerror(errno));
+
+    freeAll(4, item, aux, ptr_string, full_item);
 }
 
 void f_mmap(char ** command, tList * mmap_memory)
@@ -556,10 +597,11 @@ void f_mmap(char ** command, tList * mmap_memory)
     tPosL pos;
     char *string = MALLOC, **strings = MALLOC_PTR;
 
-    if (!command[1]) 
+    if (!command[1] || (!strcmp(command[1], "-free") && !command[2])) 
     { 
         printf("******Lista de bloques asignados mmap para el proceso %ld\n", (long)getpid());
         printList(mmap_memory); 
+        freeAll(2, string, strings);
         return;
     }
 
@@ -593,6 +635,7 @@ void f_mmap(char ** command, tList * mmap_memory)
         if (!pos) 
         {
             printf("Fichero %s no mapeado\n", command[2]);
+            freeAll(2, string, strings);
             return;
         }
 
@@ -602,6 +645,8 @@ void f_mmap(char ** command, tList * mmap_memory)
         
         deleteAtPosition(pos, mmap_memory);
     }
+
+    freeAll(2, string, strings);
 }
 
 void f_read(char ** command)
@@ -611,7 +656,7 @@ void f_read(char ** command)
     struct stat attr;
     unsigned long long memdir;
 
-    if (!command[2]) { printf("Faltan parámetros\n"); return; }
+    if (!command[1] || !command[2]) { printf("Faltan parámetros\n"); return; }
 
     if (stat(command[1], &attr)) { printf("No se ha podido hacer stat\n"); return; }            
 
@@ -666,7 +711,7 @@ void f_memdump(char ** command)
     memdir = strtoull(command[1], NULL, 16);
 
     buffer = (char*)malloc(cnt);
-    if (!buffer) { perror("Error al asignar memoria"); return; }
+    if (!buffer) { perror("Error al asignar memoria"); free(buffer); return; }
 
     for (i = 0; i < cnt; i++) 
     {
@@ -683,24 +728,26 @@ void f_memdump(char ** command)
     {
         for (j = 0; j < 25 && i*25+j < cnt; j++) 
         {
-            if (!buffer[i*25+j]) printf("   ");
+            if (!buffer || buffer[i*25+j]<0) printf("   ");
             else printf("%3c", buffer[i*25+j]);
         }
         printf("\n");  
 
         for (j = 0; j < 25 && i*25+j < cnt; j++) 
         {
-            if (!buffer[i*25+j]) printf(" 00");
-            else printf("%3X", buffer[i*25+j]);
+            if (!buffer || buffer[i*25+j]<0) printf(" 00");
+            else printf(" %02X", buffer[i*25+j]);
         }
         printf("\n");
     }
     printf("\n");
+
+    free(buffer);
 }
 
 void f_memfill(char ** command)
 {
-    int cnt = 128, i, byte = 41;
+    int cnt = 128, i, byte = 65;
     char *buffer;
     unsigned long long memdir;
 
@@ -713,15 +760,74 @@ void f_memfill(char ** command)
         byte = atoi(command[3]);
 
     memdir = strtoull(command[1], NULL, 16);
-    buffer = memdir;
+    buffer = (char*)memdir;
 
     for (i = 0; i < cnt; i++) 
         buffer[i] = byte;
 
-    printf("Llenando %d bytes de memoria con el byte %c(%d) a partir de la dirección %s", cnt, byte, byte, command[1]);
+    printf("Llenando %d bytes de memoria con el byte %c(%X) a partir de la dirección %s\n", cnt, byte, byte, command[1]);
 }
 
+void f_mem(char ** command, tList * memory, tList * shared_memory, tList * mmap_memory)
+{
+    int localvar_noinit1;
+    int localvar_noinit2;  
+    int localvar_noinit3;
+    int localvar_init1 = 0;
+    int localvar_init2 = 0;
+    int localvar_init3 = 0;
 
+    if(!command[1] || !strcmp(command[1], "-all"))
+    {
+        printf("******Lista de bloques asignados para el proceso %ld\n", (long)getpid());
+        printList(memory);
+        printList(shared_memory);
+        printList(mmap_memory);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Funciones programa:", &f_mem, &processCommand, &f_pid);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Funciones librerías:", &strcmp, &printf, &getpid);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables locales:", &localvar_init1, &localvar_init2, &localvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables locales (N.I.):", &localvar_noinit1, &localvar_noinit2, &localvar_noinit3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables globales:", &globalvar_init1, &globalvar_init2, &globalvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables globales (N.I.):", &globalvar_noinit1, &globalvar_noinit2, &globalvar_noinit3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables estáticas:", &staticvar_init1, &staticvar_init2, &staticvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables estáticas (N.I.):", &staticvar_noinit1, &staticvar_noinit2, &staticvar_noinit3);
+        return;
+    }
+
+    if(!strcmp(command[1], "-blocks"))
+    {
+        printf("******Lista de bloques asignados para el proceso \t\t%ld\n", (long)getpid());
+        printList(memory);
+        printList(shared_memory);
+        printList(mmap_memory);
+    }
+
+    if(!strcmp(command[1], "-funcs"))
+    {
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Funciones programa:", &f_mem, &processCommand, &f_pid);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Funciones librerías:", &strcmp, &printf, &getpid);
+    }
+    
+    if(!strcmp(command[1], "-vars"))
+    {
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables locales:", &localvar_init1, &localvar_init2, &localvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables locales (N.I.):", &localvar_noinit1, &localvar_noinit2, &localvar_noinit3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables globales:", &globalvar_init1, &globalvar_init2, &globalvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables globales (N.I.):", &globalvar_noinit1, &globalvar_noinit2, &globalvar_noinit3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables estáticas:", &staticvar_init1, &staticvar_init2, &staticvar_init3);
+        printf("%30s\t\t%p,\t%p,\t%p\n", "Variables estáticas (N.I.):", &staticvar_noinit1, &staticvar_noinit2, &staticvar_noinit3);
+    }
+
+    if(!strcmp(command[1], "-pmap"))
+        doMemPmap();
+}
+
+void f_recurse(char ** command)
+{
+    if (!command[1] || !isDigitString(command[1])) return;
+
+    recurse(atoi(command[1]));
+}
 
 
 void processCommand(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
@@ -753,7 +859,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(command[0], "write")) f_write(command);
     else if (!strcmp(command[0], "memdump")) f_memdump(command);
     else if (!strcmp(command[0], "memfill")) f_memfill(command);
-    else if (!strcmp(command[0], "mem")) return; 
-    else if (!strcmp(command[0], "recurse")) return; 
+    else if (!strcmp(command[0], "mem")) f_mem(command, memory, shared_memory, mmap_memory); 
+    else if (!strcmp(command[0], "recurse")) f_recurse(command); 
     else f_invalid();
 }
