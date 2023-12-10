@@ -6,6 +6,22 @@ let rec insert x = function
       else 
         hd::insert x tl;;
 
+
+let rec isort = function
+  | [] -> []
+  | hd::tl -> insert hd (isort tl);;
+
+
+let bigl = 
+  let rec aux i l =
+    if i < 500000 then 
+      aux (i+1) (i::l)
+    else 
+      i::l 
+  in 
+  aux 1 [];;
+
+
 let insert_t x l =
   let rec aux new_list = function
     | [] -> [x]
@@ -18,16 +34,57 @@ let insert_t x l =
   aux [] l;;
 
 
-let rec isort = function
-  | [] -> []
-  | hd::tl -> insert hd (isort tl);;
-
 let isort_t l = 
   let rec aux ordlist = function
     | [] -> []
     | hd::tl -> aux (insert_t hd ordlist) tl 
   in
   aux [] l;;
+
+
+let rlist n = 
+  let rec aux i l = 
+    if i < n then 
+      aux (i+1) (Random.int 50000::l)
+    else 
+      Random.int 50000::l 
+  in
+  aux 1 [];;
+
+
+(*funciones auxiliares para crear listas ascendentes y descendentes de n elementos*)
+let alist n = 
+  let rec aux i l =
+    if i > 1 then
+      aux (i-1) (i::l)
+    else 
+      i::l
+  in
+  aux n [];;
+
+
+let dlist n = 
+  let rec aux i l =
+    if i < n then 
+      aux (i+1) (i::l)
+    else 
+      i::l
+  in
+  aux 1 [];;
+
+
+let lc1 = alist 10000;;
+let lc2 = alist 20000;;
+let ld1 = dlist 10000;;
+let ld2 = dlist 20000;;
+let lr1 = rlist 10000;;
+let lr2 = rlist 20000;;
+
+
+let crono f x =
+  let t = Sys.time () in
+  let _ = f x in
+  Sys.time () -. t;;
 
 
 let isort_g ord l = 
@@ -47,70 +104,7 @@ let isort_g ord l =
     | hd::tl -> aux (insert_g hd ordlist) tl 
   in
   aux [] l;;
-
-
-let isort_t l = 
-  let rec aux ordlist l = match l with
-    [] -> ordlist |
-    hd::tl -> aux (insert_t hd ordlist) tl in
-  aux [] l;;let crono f x =
-    let t = Sys.time () in
-    let _ = f x in
-    Sys.time () -. t;;
-
-let bigl = 
-  let rec aux i l =
-    if i < 500000 then 
-      aux (i+1) (i::l)
-    else 
-      i::l 
-  in 
-  aux 1 [];;
-
-
-let rlist n = 
-  let rec aux i l = 
-    if i < n then 
-      aux (i+1) (Random.int 50000::l)
-    else 
-      Random.int 50000::l 
-  in
-  aux 1 [];;
-
-(*funciones auxiliares para crear listas ascendentes y descendentes de n elementos*)
-let alist n = 
-  let rec aux i l =
-    if i > 1 then let crono f x =
-      let t = Sys.time () in
-      let _ = f x in
-      Sys.time () -. t;;
-      aux (i-1) (i::l)
-    else 
-      i::l
-  in
-  aux n [];;
-
-let dlist n = 
-  let rec aux i l =
-    if i < n then 
-      aux (i+1) (i::l)
-    else 
-      i::l
-  in
-  aux 1 [];;
-
-
-let lc1 = alist 10000;;
-let lc2 = alist 20000;;
-let ld1 = dlist 10000;;
-let ld2 = dlist 20000;;
-let lr1 = rlist 10000;;
-let lr2 = rlist 20000;;
-
-let crono f x =
-  let t = Sys.time () in
-  let _ = f x in
-  Sys.time () -. t;;
+  
 
 (*
 # crono isort lc1;;
@@ -172,6 +166,7 @@ let rec split l = match l with
       h1::t1, h2::t2 
   | _ -> l, [];;
 
+
 let rec merge (l1,l2) = match l1, l2 with
   | [], l | l, [] -> l
   | h1::t1, h2::t2 -> 
@@ -179,6 +174,7 @@ let rec merge (l1,l2) = match l1, l2 with
         h1::merge (t1, l2)
       else 
         h2::merge (l1, t2);;
+
 
 let rec msort l = match l with
   | [] | [_] -> l
@@ -190,6 +186,7 @@ let rec msort l = match l with
 
 let bigl2 = bigl;;
 
+
 let split_t l =
   let rec aux pair = function
     | h1::h2::tl -> aux (h1::fst pair, h2::snd pair) tl
@@ -198,6 +195,7 @@ let split_t l =
     | [] -> List.rev (fst pair), List.rev (snd pair) 
   in
   aux ([],[]) l;;
+
 
 let merge_t pair = 
   let rec aux l = function 
@@ -212,6 +210,7 @@ let merge_t pair =
   (*se da la vuelta al final para que queden ordenados*)
   List.rev (aux [] pair);;
 
+
 let rec msort' l = match l with 
   | [] | [_] -> l
   | _ -> 
@@ -221,6 +220,7 @@ let rec msort' l = match l with
 
 
 let bigl3 = [];;
+
 
 (*
 No produce stack overflow porque el algoritmo utiliza el método divide y vencerás, 
@@ -246,6 +246,7 @@ El tiempo al duplicar la lista prácticamente se duplica, menos con la lista ran
 aumenta algo más. Pero en general los tiempos no varían mucho entre distintas ordenaciones
 iniciales.
 *)
+
 
 let rec msort_g ord l = 
   let split_t l =
