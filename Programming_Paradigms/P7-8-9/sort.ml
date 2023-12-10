@@ -1,82 +1,103 @@
-let rec insert x l = match l with
-  [] -> [x] |
-  h::t -> if x <= h 
-            then x :: h :: t
-            else h :: insert x t;;
+let rec insert x = function
+  | [] -> [x]
+  | hd::tl -> 
+      if x <= hd then 
+        x::hd::tl
+      else 
+        hd::insert x tl;;
 
 let insert_t x l =
-  let rec aux new_list l = match l with
-  | [] -> List.rev_append new_list [x]
-  | h::t -> if x <= h 
-              then List.rev_append new_list (x :: h :: t)
-              else aux (h :: new_list) t in
+  let rec aux new_list = function
+    | [] -> [x]
+    | hd::tl -> 
+        if x <= hd then 
+          List.rev_append new_list (x::hd::tl)
+        else 
+          aux (hd::new_list) tl
+  in
   aux [] l;;
 
 
 let rec isort = function
-  [] -> [] |
-  h::t -> insert h (isort t);;
+  | [] -> []
+  | hd::tl -> insert hd (isort tl);;
+
+let isort_t l = 
+  let rec aux ordlist = function
+    | [] -> []
+    | hd::tl -> aux (insert_t hd ordlist) tl 
+  in
+  aux [] l;;
+
+
+let isort_g ord l = 
+  let insert_g x l =
+    let rec aux_insert new_list = function
+      | [] -> [x]
+      | hd::tl -> 
+          if ord x hd then 
+            List.rev_append new_list (x::hd::tl)
+          else 
+            aux_insert (hd::new_list) tl 
+    in
+    aux_insert [] l 
+  in
+  let rec aux ordlist = function
+    | [] -> ordlist
+    | hd::tl -> aux (insert_g hd ordlist) tl 
+  in
+  aux [] l;;
+
 
 let isort_t l = 
   let rec aux ordlist l = match l with
     [] -> ordlist |
     hd::tl -> aux (insert_t hd ordlist) tl in
-  aux [] l;;
-
-let isort_g ord_func l = 
-  let insert_g ord_func x l =
-    let rec aux ord_func new_list l = match l with
-      [] -> List.rev_append new_list [x] |
-      h::t -> if ord_func x h
-                then List.rev_append new_list (x :: h :: t)
-                else aux ord_func (h :: new_list) t in
-    aux ord_func [] l in
-  let rec aux ord_func ordlist l = match l with
-    [] -> ordlist |
-    hd::tl -> aux ord_func (insert_g ord_func hd ordlist) tl in
-  aux ord_func [] l;;
-
-
-let isort_t l = 
-  let rec aux ordlist l = match l with
-    [] -> ordlist |
-    hd::tl -> aux (insert_t hd ordlist) tl in
-  aux [] l;;
+  aux [] l;;let crono f x =
+    let t = Sys.time () in
+    let _ = f x in
+    Sys.time () -. t;;
 
 let bigl = 
-  let rec aux l i = match l with
-    [] -> aux (i::[]) (i+1) |
-    hd::tl -> if i < 500000
-                then aux (i::hd::tl) (i+1)
-                else i::hd::tl in 
-  aux [] 0;;
+  let rec aux i l =
+    if i < 500000 then 
+      aux (i+1) (i::l)
+    else 
+      i::l 
+  in 
+  aux 1 [];;
 
 
 let rlist n = 
-  let randomness = 50000 in
-  let rec aux l i n = match l with 
-    [] -> aux ((Random.int randomness)::[]) (i+1) n |
-    hd::tl -> if i < n 
-                then aux ((Random.int randomness)::hd::tl) (i+1) n
-                else (Random.int randomness)::hd::tl in
-  aux [] 1 n;;
+  let rec aux i l = 
+    if i < n then 
+      aux (i+1) (Random.int 50000::l)
+    else 
+      Random.int 50000::l 
+  in
+  aux 1 [];;
 
 (*funciones auxiliares para crear listas ascendentes y descendentes de n elementos*)
 let alist n = 
-  let rec aux l i n = match l with 
-    [] -> aux (i::[]) (i-1) n |
-    hd::tl -> if i > n
-                then aux (i::hd::tl) (i-1) n
-                else i::hd::tl in
-  aux [] n 1;;
+  let rec aux i l =
+    if i > 1 then let crono f x =
+      let t = Sys.time () in
+      let _ = f x in
+      Sys.time () -. t;;
+      aux (i-1) (i::l)
+    else 
+      i::l
+  in
+  aux n [];;
 
 let dlist n = 
-  let rec aux l i n = match l with 
-    [] -> aux (i::[]) (i+1) n |
-    hd::tl -> if i < n
-                then aux (i::hd::tl) (i+1) n
-                else i::hd::tl in
-  aux [] 1 n;;
+  let rec aux i l =
+    if i < n then 
+      aux (i+1) (i::l)
+    else 
+      i::l
+  in
+  aux 1 [];;
 
 
 let lc1 = alist 10000;;
@@ -135,7 +156,8 @@ que el impacto en el tiempo de ejecución al duplicar los elementos se ve
 reducido cuando la implementación es recursiva terminal.
 
 Esto se debe a que en la implementación no terminal la pila se va llenando
-en cada iteración mientras que en la terminal se vacía en cada una.
+en cada iteración mientras que en la terminal se vacía en cada una, y esto 
+supone una penalización del tiempo de ejecución si contiene muchos elementos.
 
 El tiempo de ejecución de isort lr2 es ligeramente menor que el de  isort_t lr2 
 ya que, pese a que la recursividad terminal ayuda a vaciar la pila y no generar un
@@ -144,53 +166,67 @@ stack overflow, en este caso tiene un mayor coste de cpu que la no terminal.
 
 
 let rec split l = match l with
-  h1::h2::t -> 
-    let t1, t2 = split t in 
-    h1::t1, h2::t2 |
-  _ -> l, [];;
+  | h1::h2::t -> 
+      let t1, t2 = split t 
+      in 
+      h1::t1, h2::t2 
+  | _ -> l, [];;
 
 let rec merge (l1,l2) = match l1, l2 with
-  [], l | l, [] -> l |
-  h1::t1, h2::t2 -> 
-    if h1 <= h2 
-      then h1 :: merge (t1, l2)
-      else h2 :: merge (l1, t2);;
+  | [], l | l, [] -> l
+  | h1::t1, h2::t2 -> 
+      if h1 <= h2 then 
+        h1::merge (t1, l2)
+      else 
+        h2::merge (l1, t2);;
 
 let rec msort l = match l with
-  [] | [_] -> l |
-  _ -> let l1, l2 = split l in
-  merge (msort l1, msort l2);;
+  | [] | [_] -> l
+  | _ -> 
+      let l1, l2 = split l 
+      in
+      merge (msort l1, msort l2);;
 
 
-let bigl2 = 
-  let rec aux l i = match l with
-    [] -> aux (i::[]) (i+1) |
-    hd::tl -> if i < 500000
-                then aux (i::hd::tl) (i+1)
-                else i::hd::tl in 
-  aux [] 0;;
+let bigl2 = bigl;;
 
 let split_t l =
-  let rec aux pair l = match l with 
-    h1::h2::tl -> aux (h1::fst pair, h2::snd pair) tl |
-    hd::tl -> List.rev (hd::fst pair), List.rev (snd pair) |
-    _ -> List.rev (fst pair), List.rev (snd pair) in
+  let rec aux pair = function
+    | h1::h2::tl -> aux (h1::fst pair, h2::snd pair) tl
+    (*se les da la vuelta a las listas del par al final para que estén correctamente ordenadas*)
+    | [x] -> List.rev (x::fst pair), List.rev (snd pair) (*si queda un elemento se añade a fst*)
+    | [] -> List.rev (fst pair), List.rev (snd pair) 
+  in
   aux ([],[]) l;;
 
-let merge_t (l1, l2) = 
-  let rec aux l pair = match pair with 
-    h1::t1, h2::t2 -> 
-      if h1 <= h2 
-        then aux (h1::l) (t1, h2::t2) 
-        else aux (h2::l) (h1::t1, t2) |
-    [], a -> List.rev_append a l | 
-    a, [] -> List.rev_append a l in
-  List.rev (aux [] (l1, l2));;
+let merge_t pair = 
+  let rec aux l = function 
+    | h1::t1, h2::t2 -> 
+        if h1 <= h2 then 
+          aux (h1::l) (t1, h2::t2) 
+        else 
+          aux (h2::l) (h1::t1, t2)
+    (*si solo queda una lista se añade todo*)
+    | [], rest | rest, [] -> List.rev_append rest l
+  in
+  (*se da la vuelta al final para que queden ordenados*)
+  List.rev (aux [] pair);;
 
 let rec msort' l = match l with 
-  [] | [_] -> l |
-  _ -> let l1, l2 = split_t l in
-  merge_t (msort' l1, msort' l2);;
+  | [] | [_] -> l
+  | _ -> 
+      let l1, l2 = split_t l 
+      in
+      merge_t (msort' l1, msort' l2);;
+
+
+let bigl3 = [];;
+
+(*
+No produce stack overflow porque el algoritmo utiliza el método divide y vencerás, 
+por tanto ambas llamadas recursivas msort' l1 y msort' l2 se resuelven antes de hacer
+el merge_t, lo que evita la acumulación excesiva en la pila.
+*)
 
 (*
 # crono msort' lc1;;
@@ -211,25 +247,29 @@ aumenta algo más. Pero en general los tiempos no varían mucho entre distintas 
 iniciales.
 *)
 
-let rec msort_g ord_func l = 
+let rec msort_g ord l = 
   let split_t l =
-    let rec aux pair l = match l with 
-      h1::h2::tl -> aux (h1::fst pair, h2::snd pair) tl |
-      hd::tl -> List.rev (hd::fst pair), List.rev (snd pair) |
-      _ -> List.rev (fst pair), List.rev (snd pair) in
-    aux ([],[]) l in
-  let merge_t ord_func (l1, l2) = 
-    let rec aux ord_func l pair = match pair with 
-      h1::t1, h2::t2 -> 
-        if ord_func h1 h2
-          then aux ord_func (h1::l) (t1, h2::t2) 
-          else aux ord_func (h2::l) (h1::t1, t2) |
-      [], a -> List.rev_append a l | 
-      a, [] -> List.rev_append a l in
-    List.rev (aux ord_func [] (l1, l2)) in
+    let rec aux pair = function
+      | h1::h2::tl -> aux (h1::fst pair, h2::snd pair) tl
+      | [x] -> List.rev (x::fst pair), List.rev (snd pair)
+      | [] -> List.rev (fst pair), List.rev (snd pair) 
+    in
+    aux ([],[]) l
+  in
+  let merge_t pair = 
+    let rec aux l = function 
+      | h1::t1, h2::t2 -> 
+          if ord h1 h2 then 
+            aux (h1::l) (t1, h2::t2) 
+          else 
+            aux (h2::l) (h1::t1, t2)
+      | [], rest | rest, [] -> List.rev_append rest l
+    in
+    List.rev (aux [] pair)
+  in
   match l with 
-    [] | [_] -> l |
-    _ -> let l1, l2 = split_t l in
-    merge_t ord_func (msort_g ord_func l1, msort_g ord_func l2);;
-  
-  
+    | [] | [_] -> l
+    | _ -> 
+        let l1, l2 = split_t l 
+        in
+        merge_t (msort_g ord l1, msort_g ord l2);;
