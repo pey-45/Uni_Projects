@@ -79,7 +79,7 @@ int main(int argc, char ** argv, char **envp)
 			{
         		if (!strncmp(*env, full_command[1], strlen(full_command[1])) && (*env)[strlen(full_command[1])] == '=') 
 				{
-            		printf("Con arg3 main %s=(%p) @%p\n", *env, (void*)(*env + strlen(full_command[1]) + 1), (void*)&main);
+            		printf("Con arg3 main %s(%p) @%p\n", *env, (void*)(*env + strlen(full_command[1]) + 1), (void*)&main);
             		break;
         		}	
     		}
@@ -96,10 +96,10 @@ int main(int argc, char ** argv, char **envp)
 			printf("Con getenv %s(%p)\n", path, (void*)path);
 		}
 
+		//esta también
 		if (!strcmp(full_command[0], "changevar"))
 		{
 			char **env, *string = MALLOC;
-			bool found = false;
 
 			if (!full_command[3] ||
 				(strcmp(full_command[1], "-a") && strcmp(full_command[1], "-e") && strcmp(full_command[1], "-p"))) 
@@ -108,6 +108,9 @@ int main(int argc, char ** argv, char **envp)
         		continue;
     		}
 
+			if (!getenv(full_command[2])) //verifica que existe la variable, no se almacena
+				{ perror("Imposible cambiar variable"); continue; }
+
 			if (!strcmp(full_command[1], "-a"))
 				env = envp;
 			else if (!strcmp(full_command[1], "-e"))
@@ -115,16 +118,20 @@ int main(int argc, char ** argv, char **envp)
 
 			if (!strcmp(full_command[1], "-a") || !strcmp(full_command[1], "-e")) 
 			{
-				while (*env) if (!strncmp(*env, full_command[2], strlen(command[2]))) 
+				while (true) //env no puede ser nulo ya que se verificó que la variable existe
 				{
-            		*env = malloc(strlen(command[2]) + strlen(command[3]) + 2); // +2 para el carácter nulo y el =
-            		sprintf(*(env++), "%s=%s", command[2], command[3]);
-            		break;
-       	 		}
+					if (!strncmp(*env, full_command[2], strlen(full_command[2]))) 
+					{
+            			*env = malloc(strlen(full_command[2]) + strlen(full_command[3]) + 2); // +2 para el carácter nulo y el =
+            			sprintf(*env, "%s=%s", full_command[2], full_command[3]);
+            			break;
+       	 			}
+					env++;
+				}
 			}
 			else if (!strcmp(full_command[1], "-p"))
 			{
-				sprintf(string, "%s=%s", command[2], command[3]);
+				sprintf(string, "%s=%s", full_command[2], full_command[3]);
 				putenv(string);
 			}
 		}
