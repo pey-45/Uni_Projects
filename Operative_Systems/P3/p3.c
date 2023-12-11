@@ -100,16 +100,19 @@ int main(int argc, char ** argv, char **envp)
 		if (!strcmp(full_command[0], "changevar"))
 		{
 			char **env, *string = MALLOC;
+			if (!string)
+				{ perror("Error al asignar memoria"); continue; }
 
 			if (!full_command[3] ||
 				(strcmp(full_command[1], "-a") && strcmp(full_command[1], "-e") && strcmp(full_command[1], "-p"))) 
    		 	{
         		printf("Uso: changevar [-a|-e|-p] var valor\n");
+				free(string);
         		continue;
     		}
 
 			if (!getenv(full_command[2])) //verifica que existe la variable, no se almacena
-				{ perror("Imposible cambiar variable"); continue; }
+				{ perror("Imposible cambiar variable"); free(string); continue; }
 
 			if (!strcmp(full_command[1], "-a"))
 				env = envp;
@@ -133,6 +136,41 @@ int main(int argc, char ** argv, char **envp)
 			{
 				sprintf(string, "%s=%s", full_command[2], full_command[3]);
 				putenv(string);
+			}
+			free(string);
+		}
+
+		if (!strcmp(full_command[0], "subsvar"))
+		{
+			char **env, *string = MALLOC;
+			if (!string)
+				{ perror("Error al asignar memoria"); continue; }
+
+			if (!full_command[4] ||
+				(strcmp(full_command[1], "-a") && strcmp(full_command[1], "-e"))) 
+   		 	{
+        		printf("Uso: subsvar [-a|-e] var1 var2 valor\n");
+				free(string);
+        		continue;
+    		}
+
+			if (!getenv(full_command[2])) //verifica que existe la variable, no se almacena
+				{ perror("Imposible cambiar variable"); free(string); continue; }
+
+			if (!strcmp(full_command[1], "-a"))
+				env = envp;
+			else if (!strcmp(full_command[1], "-e"))
+				env = environ;
+
+			while (true) //env no puede ser nulo ya que se verificó que la variable existe
+			{
+				if (!strncmp(*env, full_command[2], strlen(full_command[2]))) 
+				{
+            		*env = malloc(strlen(full_command[3]) + strlen(full_command[4]) + 2); // +2 para el carácter nulo y el =
+            		sprintf(*env, "%s=%s", full_command[3], full_command[4]);
+            		break;
+       	 		}
+				env++;
 			}
 		}
 	}
