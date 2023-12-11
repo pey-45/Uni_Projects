@@ -4,7 +4,9 @@
 #include "functions.h"
 #define ever ;;
 
-int main()
+extern char **environ;
+
+int main(int argc, char ** argv, char **envp)
 {
 	char command[MAX_PROMPT], *full_command[MAX_PROMPT], *username = getenv("USER"), dir[MAX_PROMPT];
 	//se crean las listas de historial y archivos abiertos
@@ -15,6 +17,7 @@ int main()
 	tList mmap_memory;
 	struct utsname unameData;
 	uname(&unameData);
+
 
 	//obtencion de nombre de usuario y nodename para formato de input
 	if (!username)
@@ -56,5 +59,74 @@ int main()
 		//se trocea la cadena y se procesa como array de cadenas
 		TrocearCadena(command, full_command);
 		processCommand(full_command, &command_history, &open_files, &memory, &shared_memory, &mmap_memory);
+
+		//esta funcion tiene que hacerse en el main
+		if (!strcmp(full_command[0], "showvar"))
+		{
+			char **env, *path;
+    		int i = 0;
+    
+    		if (!full_command[1])
+    		{
+        		for (env = envp; *env; env++) 
+            		printf("%p->main arg3[%d]=(%p) %s\n", (void*)env, i++, (void*)*env, *env);
+        		continue;
+   			}
+
+			if (!(path = getenv(full_command[1]))) continue;
+
+    		for (env = envp; *env; env++) 
+			{
+        		if (!strncmp(*env, full_command[1], strlen(full_command[1])) && (*env)[strlen(full_command[1])] == '=') 
+				{
+            		printf("Con arg3 main %s=(%p) @%p\n", *env, (void*)(*env + strlen(full_command[1]) + 1), (void*)&main);
+            		break;
+        		}	
+    		}
+
+    		for (env = environ; *env; env++)
+    		{
+        		if (!strncmp(*env, full_command[1], strlen(full_command[1])) && (*env)[strlen(full_command[1])] == '=') 
+        		{
+            		printf("Con environ %s(%p) @%p\n", *env, (void*)*env, (void*)&environ);
+            		break;
+        		}
+    		}
+
+			printf("Con getenv %s(%p)\n", path, (void*)path);
+		}
+
+		if (!strcmp(full_command[0], "changevar"))
+		{
+			char **env, *string = MALLOC;
+			bool found = false;
+
+			if (!full_command[3] ||
+				(strcmp(full_command[1], "-a") && strcmp(full_command[1], "-e") && strcmp(full_command[1], "-p"))) 
+   		 	{
+        		printf("Uso: changevar [-a|-e|-p] var valor\n");
+        		continue;
+    		}
+
+			if (!strcmp(full_command[1], "-a"))
+				env = envp;
+			else if (!strcmp(full_command[1], "-e"))
+				env = environ;
+
+			if (!strcmp(full_command[1], "-a") || !strcmp(full_command[1], "-e")) 
+			{
+				while (*env) if (!strncmp(*env, full_command[2], strlen(command[2]))) 
+				{
+            		*env = malloc(strlen(command[2]) + strlen(command[3]) + 2); // +2 para el carácter nulo y el =
+            		sprintf(*(env++), "%s=%s", command[2], command[3]);
+            		break;
+       	 		}
+			}
+			else if (!strcmp(full_command[1], "-p"))
+			{
+				sprintf(string, "%s=%s", command[2], command[3]);
+				putenv(string);
+			}
+		}
 	}
 }
