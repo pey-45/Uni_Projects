@@ -2,6 +2,8 @@
 
 #define PERMISSIONS 0644 //para memoria compartida
 
+extern char **environ;
+
 int globalvar_noinit1;
 int globalvar_noinit2;
 int globalvar_noinit3;
@@ -65,7 +67,7 @@ void f_hist(char ** command, tList * command_history)
         printHistUntil(listLength(*command_history), *command_history);
 }
 
-void f_command(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
+void f_command(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
     int current_index = 1;
@@ -90,7 +92,7 @@ void f_command(char ** command, tList * command_history, tList * open_files, tLi
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
         TrocearCadena(string, strings);
-        processCommand(strings, command_history, open_files, memory, shared_memory, mmap_memory);
+        processCommand(strings, main, envp, command_history, open_files, memory, shared_memory, mmap_memory);
     } 
     else printf("No hay elemento %s en el histórico\n", command[1]);
 
@@ -958,17 +960,122 @@ void f_uid(char ** command)
     }
 }
 
-void f_showvar(char ** command)
+void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp)
 {
+    char **env, *path;
+    int i = 0;
     
+    if (!command[1])
+    {
+        for (env = envp; *env; env++) 
+            printf("%p->main arg3[%d]=(%p) %s\n", (void*)env, i++, (void*)*env, *env);
+        return;
+   	}
+
+	if (!(path = getenv(command[1]))) return;
+
+    for (env = envp; *env; env++) 
+	{
+        if (!strncmp(*env, command[1], strlen(command[1])) && (*env)[strlen(command[1])] == '=') 
+		{
+            printf("Con arg3 main %s(%p) @%p\n", *env, (void*)(*env + strlen(command[1]) + 1), (void*)main);
+            break;
+        }	
+    }
+
+    for (env = environ; *env; env++)
+    {
+        if (!strncmp(*env, command[1], strlen(command[1])) && (*env)[strlen(command[1])] == '=') 
+        {
+            printf("Con environ %s(%p) @%p\n", *env, (void*)*env, (void*)&environ);
+            break;
+        }
+    }
+
+	printf("Con getenv %s(%p)\n", path, (void*)path);
 }
 
-void f_changevar(char ** command)
+void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp)
 {
-    
+    char **env, *string = MALLOC;
+	if (!string)
+		{ perror("Error al asignar memoria"); return; }
+
+	if (!command[3] ||
+		(strcmp(command[1], "-a") && strcmp(command[1], "-e") && strcmp(command[1], "-p"))) 
+   	{
+        printf("Uso: changevar [-a|-e|-p] var valor\n");
+		free(string);
+        return;
+    }
+
+	if (!getenv(command[2])) //verifica que existe la variable, no se almacena
+		{ perror("Imposible cambiar variable"); free(string); return; }
+
+	if (!strcmp(command[1], "-a"))
+		env = envp;
+	else if (!strcmp(command[1], "-e"))
+		env = environ;
+
+	if (!strcmp(command[1], "-a") || !strcmp(command[1], "-e")) 
+	{
+		while (true) //env no puede ser nulo ya que se verificó que la variable existe
+		{
+			if (!strncmp(*env, command[2], strlen(command[2]))) 
+			{
+            	*env = malloc(strlen(command[2]) + strlen(command[3]) + 2); // +2 para el carácter nulo y el =
+            	sprintf(*env, "%s=%s", command[2], command[3]);
+            	break;
+       	 	}
+			env++;
+		}
+	}
+	else if (!strcmp(command[1], "-p"))
+	{
+		sprintf(string, "%s=%s", command[2], command[3]);
+		putenv(string);
+	}
+	free(string);
 }
 
-void processCommand(char ** command, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
+void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp)
+{
+    char **env, *string = MALLOC;
+	if (!string)
+		{ perror("Error al asignar memoria"); return; }
+
+	if (!command[4] ||
+		(strcmp(command[1], "-a") && strcmp(command[1], "-e"))) 
+   	{
+        printf("Uso: subsvar [-a|-e] var1 var2 valor\n");
+		free(string);
+        return;
+    }
+
+	if (!getenv(command[2])) //verifica que existe la variable, no se almacena
+		{ perror("Imposible cambiar variable"); free(string); return; }
+
+	if (!strcmp(command[1], "-a"))
+		env = envp;
+	else if (!strcmp(command[1], "-e"))
+		env = environ;
+
+	while (true) //env no puede ser nulo ya que se verificó que la variable existe
+	{
+		if (!strncmp(*env, command[2], strlen(command[2]))) 
+		{
+            *env = malloc(strlen(command[3]) + strlen(command[4]) + 2); // +2 para el carácter nulo y el =
+            sprintf(*env, "%s=%s", command[3], command[4]);
+            break;
+       	}
+		env++;
+	}
+}
+
+
+
+
+void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
 {
     if (!command || !command[0]) return;
     char first[MAX_PROMPT];
@@ -986,7 +1093,7 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(first, "hist"))   
         f_hist(command, command_history);
     else if (!strcmp(first, "command")) 
-        f_command(command, command_history, open_files, memory, shared_memory, mmap_memory);
+        f_command(command, main, envp, command_history, open_files, memory, shared_memory, mmap_memory);
     else if (!strcmp(first, "open")) 
         f_open(command, open_files, true);
     else if (!strcmp(first, "close")) 
@@ -1031,11 +1138,11 @@ void processCommand(char ** command, tList * command_history, tList * open_files
     else if (!strcmp(first, "uid")) 
         f_uid(command);
     else if (!strcmp(first, "showvar")) 
-        f_showvar(command);
+        f_showvar(command, main, envp);
     else if (!strcmp(first, "changevar")) 
-        f_changevar(command);
+        f_changevar(command, main, envp);
     else if (!strcmp(first, "subsvar")) 
-        return;
+        f_subsvar(command, main, envp);
     else if (!strcmp(first, "showenv")) 
         return;
     else if (!strcmp(first, "fork")) 
