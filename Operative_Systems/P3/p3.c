@@ -57,22 +57,5 @@ int main(int argc, char ** argv, char **envp)
 		//se trocea la cadena y se procesa como array de cadenas
 		TrocearCadena(command, full_command);
 		processCommand(full_command, main, envp, &command_history, &open_files, &memory, &shared_memory, &mmap_memory);
-
-		//esta funcion tiene que hacerse en el main
-		if (!strcmp(full_command[0], "showvar"))
-		{
-			
-		}
-
-		//esta también
-		if (!strcmp(full_command[0], "changevar"))
-		{
-			
-		}
-
-		if (!strcmp(full_command[0], "subsvar"))
-		{
-			
-		}
 	}
 }

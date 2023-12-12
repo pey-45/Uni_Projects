@@ -995,7 +995,7 @@ void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp)
 	printf("Con getenv %s(%p)\n", path, (void*)path);
 }
 
-void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp)
+void f_changevar(char ** command, char ** envp)
 {
     char **env, *string = MALLOC;
 	if (!string)
@@ -1038,7 +1038,7 @@ void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp
 	free(string);
 }
 
-void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp)
+void f_subsvar(char ** command, char ** envp)
 {
     char **env, *string = MALLOC;
 	if (!string)
@@ -1072,7 +1072,7 @@ void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp)
 	}
 }
 
-void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp)
+void f_showenv(char ** command, char ** envp)
 {
     char **env;
     int i = 0;
@@ -1097,15 +1097,61 @@ void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp)
 void f_fork(char ** command)
 {
     pid_t pid = fork();
+    int status;
 
     if (pid == -1) 
         { perror("Error al hacer fork"); return;} 
-    else if (pid == 0) 
+    else if (!pid) 
+    {
         printf("ejecutando proceso %d\n", getpid());
-    else wait(NULL);
+        execvp("fork", command);
+    }
+    else waitpid(pid, &status, 0);
 }
 
-//quitar argumentos main de las funciines que no lo usen
+void f_exec(char ** command)
+{
+    int i;
+    char *string = MALLOC;
+
+    if (!command[1]) 
+        { printf("Imposible ejecutar: Bad address\n"); return; }
+    
+    strcpy(string, command[1]);
+    for (i = 2; command[i]; i++)
+    { 
+        strcat(string, " "); 
+        strcat(string, command[i]); 
+    }
+
+    system(string);
+    free(string);
+}
+
+void f_jobs() { system("ps -e --format pid,cmd,state | grep -v 'R'"); }
+
+void f_deljobs(char ** command)
+{
+    char *command_getpid = MALLOC, *pid = malloc(10*sizeof(char));
+    FILE *output;
+
+    if (!command[1] ||
+        (strcmp(command[1], "-term") && strcmp(command[1], "-sig"))) 
+        { f_jobs(); return; }
+
+    if (!strcmp(command[1], "-term")) 
+        strcpy(command_getpid, "ps -e --format pid,state | grep -v 'R' | grep 'T' | awk '{print $1}'");
+    else if (!strcmp(command[1], "-sig"))
+        strcpy(command_getpid, "ps -e --format pid,state | grep -v 'R' | grep 'Z' | awk '{print $1}'");
+    
+    
+    if (!(output = popen(command_getpid, "r")))
+        { perror("Error al ejecutar el comando"); return; }
+    
+    while (fgets(pid, sizeof(pid), output))
+        if (kill(atoi(pid), SIGKILL) == -1) 
+            { perror("Error al matar el proceso"); return; }
+}
 
 
 void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
@@ -1173,19 +1219,19 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "showvar")) 
         f_showvar(command, main, envp);
     else if (!strcmp(first, "changevar")) 
-        f_changevar(command, main, envp);
+        f_changevar(command, envp);
     else if (!strcmp(first, "subsvar")) 
-        f_subsvar(command, main, envp);
+        f_subsvar(command, envp);
     else if (!strcmp(first, "showenv")) 
-        f_showenv(command, main, envp);
+        f_showenv(command, envp);
     else if (!strcmp(first, "fork")) 
         f_fork(command);
     else if (!strcmp(first, "exec")) 
-        return;
+        f_exec(command);
     else if (!strcmp(first, "jobs"))
-        return;
+        f_jobs();
     else if (!strcmp(first, "deljobs")) 
-        return;
+        f_deljobs(command);
     else if (!strcmp(first, "job")) 
         return;
     else 

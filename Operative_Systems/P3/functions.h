@@ -31,10 +31,13 @@ void f_mem(char ** command, tList * memory, tList * shared_memory, tList * mmap_
 void f_recurse(char ** command);
 void f_uid(char ** command);
 void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp);
-void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp);
-void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp);
-void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp);
+void f_changevar(char ** command, char ** envp);
+void f_subsvar(char ** command, char ** envp);
+void f_showenv(char ** command, char ** envp);
 void f_fork(char ** command);
+void f_exec(char ** command);
+void f_jobs();
+void f_deljobs(char ** command);
 
 
 void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory);
