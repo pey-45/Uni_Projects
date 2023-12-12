@@ -1105,6 +1105,7 @@ void f_fork(char ** command)
     else wait(NULL);
 }
 
+//quitar argumentos main de las funciines que no lo usen
 
 
 void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
