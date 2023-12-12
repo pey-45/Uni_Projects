@@ -34,6 +34,7 @@ void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp);
 void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp);
 void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp);
 void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp);
+void f_fork(char ** command);
 
 
 void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory);

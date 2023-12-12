@@ -1080,9 +1080,7 @@ void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp)
     //no hay argumentos o es environ, en cada caso se asigna a env el valor que corresponda
     if (!command[1] || !strcmp(command[1], "-environ"))
     {
-        env = command[1]? environ:envp;
-
-        for (env; *env; env++)
+        for (env = command[1]? environ:envp; *env; env++)
             printf("%p->%s[%d]=(%p) %s\n", (void*)env, command[1]?"environ":"main arg3", i++, (void*)*env, *env);
     }
     
@@ -1094,6 +1092,17 @@ void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp)
     else if (!strcmp(command[1], "-addr"))
         printf("environ:   %p (almacenado en %p)\nmain arg3: %p (almacenado en %p)\n", 
                 (void*)environ, (void*)&environ, (void*)envp, (void*)&envp);
+}
+
+void f_fork(char ** command)
+{
+    pid_t pid = fork();
+
+    if (pid == -1) 
+        { perror("Error al hacer fork"); return;} 
+    else if (pid == 0) 
+        printf("ejecutando proceso %d\n", getpid());
+    else wait(NULL);
 }
 
 
@@ -1169,7 +1178,7 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "showenv")) 
         f_showenv(command, main, envp);
     else if (!strcmp(first, "fork")) 
-        return;
+        f_fork(command);
     else if (!strcmp(first, "exec")) 
         return;
     else if (!strcmp(first, "jobs"))
