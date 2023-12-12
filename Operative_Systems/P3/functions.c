@@ -1072,6 +1072,29 @@ void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp)
 	}
 }
 
+void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp)
+{
+    char **env;
+    int i = 0;
+
+    //no hay argumentos o es environ, en cada caso se asigna a env el valor que corresponda
+    if (!command[1] || !strcmp(command[1], "-environ"))
+    {
+        env = command[1]? environ:envp;
+
+        for (env; *env; env++)
+            printf("%p->%s[%d]=(%p) %s\n", (void*)env, command[1]?"environ":"main arg3", i++, (void*)*env, *env);
+    }
+    
+    //si el argumento no es válido se indica el uso
+    else if (strcmp(command[1], "-environ") && strcmp(command[1], "-addr"))
+        printf("Uso: showenv [-environ|-addr]\n");
+    
+    //caso -addr
+    else if (!strcmp(command[1], "-addr"))
+        printf("environ:   %p (almacenado en %p)\nmain arg3: %p (almacenado en %p)\n", 
+                (void*)environ, (void*)&environ, (void*)envp, (void*)&envp);
+}
 
 
 
@@ -1144,7 +1167,7 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "subsvar")) 
         f_subsvar(command, main, envp);
     else if (!strcmp(first, "showenv")) 
-        return;
+        f_showenv(command, main, envp);
     else if (!strcmp(first, "fork")) 
         return;
     else if (!strcmp(first, "exec")) 

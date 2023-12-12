@@ -32,7 +32,8 @@ void f_recurse(char ** command);
 void f_uid(char ** command);
 void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp);
 void f_changevar(char ** command, int (*main)(int, char**, char**), char ** envp);
-void f_subs(char ** command, int (*main)(int, char**, char**), char ** envp);
+void f_subsvar(char ** command, int (*main)(int, char**, char**), char ** envp);
+void f_showenv(char ** command, int (*main)(int, char**, char**), char ** envp);
 
 
 void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory);
