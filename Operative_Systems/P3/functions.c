@@ -91,7 +91,7 @@ void f_command(char ** command, int (*main)(int, char**, char**), char ** envp, 
     {
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
-        TrocearCadena(string, strings);
+        trimString(string, strings);
         processCommand(strings, main, envp, command_history, open_files, memory, shared_memory, mmap_memory, bg_proc);
     } 
     else printf("No hay elemento %s en el histórico\n", command[1]);
@@ -106,7 +106,7 @@ void f_open(char ** command, tList * open_files, bool show_message)
 
     if (!command[1] || !mode_c || !output)
     {
-        if (command[1]) //si no hay argumentos se imprime la lista de ficheros abiertos
+        if (!command[1]) //si no hay argumentos se imprime la lista de ficheros abiertos
             printOpenListByDF(*open_files);
         else //fallo en el malloc de mode_c o output
             perror("Error al asignar memoria");
@@ -186,7 +186,7 @@ void f_dup(char ** command, tList * open_files)
     else 
         { perror("Imposible duplicar descriptor"); freeAll(5, output, p, mode, aux, aux_strings); return; }
 
-    TrocearCadena(aux, aux_strings);
+    trimString(aux, aux_strings);
 
     for (int i = 3; aux_strings[i]; ++i) //se itera desde el nombre del archivo
     {
@@ -202,8 +202,7 @@ void f_dup(char ** command, tList * open_files)
             !strcmp(aux_strings[i], "O_TRUNC")))   
             { strcpy(mode, aux_strings[i]); break; }
 
-
-        strcat(p, aux_strings[i]); 
+        strcat(p, aux_strings[i]);
         strcat(p, " ");
     }
 
@@ -382,7 +381,7 @@ void f_create(char ** command, tList * open_files)
     if (!strcmp(command[1], "-f"))
     {
         sprintf(string, "open %s cr", command[2]);
-        TrocearCadena(string, strings);
+        trimString(string, strings);
         f_open(strings, open_files, false);
     }
     else if (mkdir(command[1], 0777)) 
@@ -602,7 +601,7 @@ void f_malloc(char ** command, tList * memory)
         for (pos = first(*memory); pos != NULL; pos = next(pos))
         {
             strcpy(aux, getItem(pos));
-            TrocearCadena(aux, full_item);
+            trimString(aux, full_item);
             if (!strcmp(full_item[1], command[2]))
             {
                 memdir = strtoull(full_item[0], NULL, 16);
@@ -684,7 +683,7 @@ void f_shared(char ** command, tList * shared_memory) //NO FUNCIONA
         for (pos = first(*shared_memory); pos != NULL; pos = next(pos))
         {
             strcpy(aux, getItem(pos));
-            TrocearCadena(aux, full_item);
+            trimString(aux, full_item);
             full_item[7][strlen(full_item[7])-1] = '\0';
 
             if (!strcmp(full_item[7], command[2]))
@@ -760,7 +759,7 @@ void f_mmap(char ** command, tList * mmap_memory)
         for (pos = first(*mmap_memory); pos != NULL; pos = next(pos))
         {
             strcpy(string, getItem(pos));
-            TrocearCadena(string, strings);
+            trimString(string, strings);
             if (!strcmp(strings[5], command[2]))
             {
                 file_size = atoi(strings[1]);
@@ -1126,18 +1125,12 @@ void f_fork(char ** command, tList * bg_proc)
 
 void f_exec(char ** command)
 {
-    int i;
     char *string = MALLOC;
 
     if (!command[1]) 
         { printf("Imposible ejecutar: Bad address\n"); return; }
     
-    strcpy(string, command[1]);
-    for (i = 2; command[i]; i++)
-    { 
-        strcat(string, " "); 
-        strcat(string, command[i]); 
-    }
+    untrimString(command+1/*desde command[1]*/, string);
 
     system(string);
     free(string);
@@ -1176,56 +1169,68 @@ void f_job(char ** command, tList * bg_proc)
         (!strcmp(command[1], "-fg") && !command[2]) || //el argumento es -fg y no hay command[2]
         !isDigitString(command[strcmp(command[1], "-fg")? 1:2])) //el argumento no es un digito
         printList(bg_proc);
-
-    if (strcmp(command[1], "-fg"))
+    else if (strcmp(command[1], "-fg"))
     {
         for (pos = first(*bg_proc); pos; pos = next(pos))
             if (!strcmp(strtok(getItem(pos), " "), command[1]))
                 { printItem(pos); break; }
 
         if (!pos) printList(bg_proc); 
-
-        return;
     }
 }
 
 
 void f_invalid(char ** command, tList * bg_proc) 
 { 
-    char *untrimmed_command = MALLOC, *item = MALLOC, *time_string = MALLOC, *route = MALLOC, status;
-    int i, exit_code;
+    char *untrimmed_command = MALLOC, *item = MALLOC, *time_string = MALLOC, *aux_string = MALLOC, **aux_strings = MALLOC_PTR;
+    int status;
     pid_t pid;
     time_t t; 
     time(&t); 
     struct tm *local = localtime(&t);
-    FILE *file;
     bool ampersand;
 
-    strcpy(untrimmed_command, command[0]);
-    for (i = 1; command[i]; i++)
-    {
-        strcat(untrimmed_command, " ");
-        strcat(untrimmed_command, command[i]);
-    }
-    
-    exit_code = system(untrimmed_command);
+    untrimString(command, untrimmed_command);
     ampersand = !strcmp(command[stringsSize(command)-1], "&");
 
     if (ampersand)
     {
-        snprintf(route, sizeof(route), "/proc/%d/stat", pid);
-        file = fopen(route, "r");
-        if (!file) 
-            { printf("Error al abrir el archivo de estado del proceso.\n"); return; }
+        pid = fork();
 
-        // Leer el estado del proceso desde el archivo
-        fscanf(file, "%*d %*s %c", &status); // Leer el segundo campo, que contiene el estado
-        fclose(file);
-        if (ampersand)
-            untrimmed_command[stringsSize(untrimmed_command-2)] = '\0';
+        if (pid < 0) 
+        {
+            perror("Error al crear el proceso hijo");
+            return;
+        }
+        else if (!pid) 
+        {
+            strftime(time_string, MAX_PROMPT, "%Y/%m/%d %H:%M:%S", local);
+            sprintf(item, "%d %s p=%d %s %s (%03d) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), time_string, "ACTIVO", 0, untrimmed_command);
+            item[strlen(item)-2] = '\0'; //quitar &
+            insertItem(item, NULL, bg_proc);
+            printItem(findItem(item, *bg_proc));
+            printf("\n");
 
-        strftime(time_string, MAX_PROMPT, "%b %d %H:%M", local);
-        sprintf(item, "%d %s p=%d %s %s (%d) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), status, exit_code, untrimmed_command);
+            execl("/bin/sh", "sh", "-c", untrimmed_command, NULL);
+        }
+        else 
+        {
+            waitpid(pid, &status, 0);
+
+            strcpy(aux_string, getItem(last(*bg_proc)));
+            trimString(aux_string, aux_strings);
+            initializeString(aux_string);
+            strcpy(aux_strings[5], "TERMINADO");
+            sprintf(aux_strings[6], "(%d)", status);
+            untrimString(aux_strings, aux_string);
+
+            updateItem(aux_string, last(*bg_proc));
+        }
+    }
+    else 
+    {
+        printf("Puta mierda");
+        system(untrimmed_command);
     }
 }
 

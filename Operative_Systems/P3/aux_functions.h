@@ -6,7 +6,8 @@
 
 void freeAll(int n, ...);
 void freeAllRec(int n, ...);
-int TrocearCadena(char * cadena, char ** trozos);
+int trimString(char * string, char ** strings);
+void untrimString(char ** strings, char * string);
 tPosL getPosByDF(int df, tList L);
 tPosL getLastPosByDF(tList L);
 void printOpenListByDF(tList L);
@@ -33,6 +34,7 @@ void show_credentials();
 int findVariable(char * var, char ** e);
 int changeVar(char * var, char * valor, char ** e);
 int stringsSize(char ** strings);
+char *processStatus(char c);
 
 
 #endif //AUX_FUNCTIONS_H

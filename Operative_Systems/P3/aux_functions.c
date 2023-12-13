@@ -1,7 +1,7 @@
 #include "aux_functions.h"
 
 //libera strings y cadenas de strings con solo elementos nulos
-//sirve para trocearcadena
+//sirve para trimString
 //IMPORTANTE LIBERAR PRIMERO EL STRING Y LUEGO LA CADENA DE PUNTEROS A STRING
 void freeAll(int n, ...)
 {
@@ -38,15 +38,25 @@ void freeAllRec(int n, ...)
     va_end(args);
 }
 
-int TrocearCadena(char * cadena, char ** trozos)
+int trimString(char * string, char ** strings)
 {
-    /*asigna al array de cadenas los elementos separados 
-    por espacios, tabs o saltos de línea y devuelve la cantidad de trozos*/
     int i;
 
-    if (!(trozos[0]=strtok(cadena," \n\t"))) return 0;
-    for (i = 1; (trozos[i]=strtok(NULL," \n\t")); ++i);
+    if (!(strings[0]=strtok(string," \n\t"))) return 0;
+    for (i = 1; (strings[i]=strtok(NULL," \n\t")); ++i);
     return i;
+}
+
+void untrimString(char ** strings, char * string)
+{
+    int i;
+
+    strcpy(string, strings[0]);
+    for (i = 1; strings[i]; i++)
+    { 
+        strcat(string, " "); 
+        strcat(string, strings[i]);
+    }
 }
 
 tPosL getPosByDF(int df, tList L)
@@ -60,7 +70,7 @@ tPosL getPosByDF(int df, tList L)
     for (i = first(L); i; i = next(i))
     {
         strcpy(string, getItem(i));
-        TrocearCadena(string, strings);
+        trimString(string, strings);
         if (atoi(strings[1])==df) break;
     }
 
@@ -79,7 +89,7 @@ tPosL getLastPosByDF(tList L)
     for (i = first(L); i; i = next(i))
     {
         strcpy(string, getItem(i));
-        TrocearCadena(string, strings);
+        trimString(string, strings);
         if (atoi(strings[1]) > max) max = atoi(strings[1]);
     }
 
@@ -97,7 +107,7 @@ void printOpenListByDF(tList L)
 
     //almacena en last_index el df de la ultima posicion de archivos abiertos
     strcpy(string, getItem(getLastPosByDF(L)));
-    TrocearCadena(string, strings);
+    trimString(string, strings);
     last_index = atoi(strings[1]);
 
     //recorre la lista hasta el último elemento imprimiendo los elementos que encuentra
@@ -255,7 +265,7 @@ void printAsStat(char * dir, char ** args)
     if (includesString("link", args)) strcat(command, "-link ");
     strcat(command, dir);
 
-    TrocearCadena(command, full_command);
+    trimString(command, full_command);
     f_stat(full_command);
 
     freeAll(2, command, full_command);
@@ -510,8 +520,7 @@ int findVariable(char * var, char ** e)  /*busca una variable en el entorno que 
   	int i = 0;
   	char *aux = MALLOC;
   
-  	strcpy (aux,var);
-  	strcat (aux,"=");
+    sprintf(aux, "%s=", var);
   
   	while (e[i]!=NULL)
     	if (!strncmp(e[i],aux,strlen(aux)))
@@ -541,4 +550,17 @@ int stringsSize(char ** strings)
     for (i = 0; strings[i]; i++);
 
     return i;
+}
+
+char *processStatus(char c)
+{
+    switch(c)
+    {
+        case 'R': return "ACTIVO";
+        case 'S': return "EN ESPERA";
+        case 'D': return "EN ESPERA ININTERRUMPIBLE";
+        case 'Z': return "ZOMBI";
+        case 'T': return "TERMINADO";
+        default: return NULL;
+    }
 }

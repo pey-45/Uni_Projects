@@ -42,7 +42,7 @@ tPosL findItem(tItemL d, tList L)
 {
     tPosL p;
 
-    for (p = L; p && (p->data != d); p = p->next);
+    for (p = L; p && strcmp(p->data, d); p = p->next);
     return p;
 }
 

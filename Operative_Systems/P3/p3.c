@@ -52,7 +52,7 @@ int main(int argc, char ** argv, char **envp)
 		//se inserta el comando en el historial de comandos
 		insertItem(command, NULL, &command_history);
 		//se trocea la cadena y se procesa como array de cadenas
-		TrocearCadena(command, full_command);
+		trimString(command, full_command);
 		processCommand(full_command, main, envp, &command_history, &open_files, &memory, &shared_memory, &mmap_memory, &bg_proc);
 	}
 }
