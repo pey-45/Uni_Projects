@@ -30,6 +30,9 @@ ssize_t readFile(char *f, void *p, size_t cont);
 void doMemPmap();
 void recurse(int n);
 void show_credentials();
+int findVariable(char * var, char ** e);
+int changeVar(char * var, char * valor, char ** e);
+int stringsSize(char ** strings);
 
 
 #endif //AUX_FUNCTIONS_H

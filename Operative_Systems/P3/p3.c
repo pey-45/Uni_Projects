@@ -8,11 +8,7 @@ int main(int argc, char ** argv, char **envp)
 {
 	char command[MAX_PROMPT], *full_command[MAX_PROMPT], *username = getenv("USER"), dir[MAX_PROMPT];
 	//se crean las listas de historial y archivos abiertos
-	tList command_history;
-	tList open_files;
-	tList memory;
-	tList shared_memory;
-	tList mmap_memory;
+	tList command_history, open_files, memory, shared_memory, mmap_memory, bg_proc;
 	struct utsname unameData;
 	uname(&unameData);
 
@@ -21,7 +17,7 @@ int main(int argc, char ** argv, char **envp)
 	if (!username)
 	{
     	perror("No se pudo obtener el nombre de usuario\n");
-		f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory);
+		f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory, &bg_proc);
 	}
 
 	createEmptyList(&command_history);
@@ -29,6 +25,7 @@ int main(int argc, char ** argv, char **envp)
 	createEmptyList(&memory);
 	createEmptyList(&shared_memory);
 	createEmptyList(&mmap_memory);
+	createEmptyList(&bg_proc);
 	//se añaden los elementos por defecto a la lista de archivos abiertos
 	insertItem("Descriptor: 0 -> entrada estandar O_RDWR", NULL, &open_files);
 	insertItem("Descriptor: 1 -> salida estandar O_RDWR", NULL, &open_files);
@@ -40,7 +37,7 @@ int main(int argc, char ** argv, char **envp)
 		if (!getcwd(dir, MAX_PROMPT))
 		{
 			perror("No se pudo obtener el directorio actual.\n");
-			f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory);
+			f_quit(&command_history, &open_files, &memory, &shared_memory, &mmap_memory, &bg_proc);
 		}
 
 		printf("\033[1;34m%s@%s\033[1;37m:\033[1;33m%s\033[0m$ ", username, unameData.nodename, dir);
@@ -56,6 +53,6 @@ int main(int argc, char ** argv, char **envp)
 		insertItem(command, NULL, &command_history);
 		//se trocea la cadena y se procesa como array de cadenas
 		TrocearCadena(command, full_command);
-		processCommand(full_command, main, envp, &command_history, &open_files, &memory, &shared_memory, &mmap_memory);
+		processCommand(full_command, main, envp, &command_history, &open_files, &memory, &shared_memory, &mmap_memory, &bg_proc);
 	}
 }

@@ -67,7 +67,7 @@ void f_hist(char ** command, tList * command_history)
         printHistUntil(listLength(*command_history), *command_history);
 }
 
-void f_command(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
+void f_command(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory, tList * bg_proc) 
 {
     char *string = MALLOC, **strings = MALLOC_PTR;
     int current_index = 1;
@@ -92,7 +92,7 @@ void f_command(char ** command, int (*main)(int, char**, char**), char ** envp, 
         strcpy(string, getItem(i));
         printf("Ejecutando hist (%s): %s\n", command[1], string);
         TrocearCadena(string, strings);
-        processCommand(strings, main, envp, command_history, open_files, memory, shared_memory, mmap_memory);
+        processCommand(strings, main, envp, command_history, open_files, memory, shared_memory, mmap_memory, bg_proc);
     } 
     else printf("No hay elemento %s en el histórico\n", command[1]);
 
@@ -235,101 +235,134 @@ void f_infosys()
 
 void f_help(char ** command)
 {
+    char string[MAX_PROMPT];
     //se muestra la ayuda correspondiente a cada comando
     if (!command[1]) 
+    {
         printf("help [cmd|-lt|-T topic]: ayuda sobre comandos\n\tComandos disponibles:\nauthors pid chdir " 
                "date time hist command open close dup listopen infosys help quit exit bye create stat list delete deltree\n");
-    else if (!strcmp(command[1], "authors")) 
+        return;
+    }
+    
+    strcpy(string, command[1]); 
+
+    if (!strcmp(string, "authors")) 
         printf("authors [-n|-l]: Muestra los nombres y/o logins de los autores\n");
-    else if (!strcmp(command[1], "pid")) 
+    else if (!strcmp(string, "pid")) 
         printf("pid [-p]: Muestra el pid del shell o de su proceso padre\n");
-    else if (!strcmp(command[1], "chdir")) 
+    else if (!strcmp(string, "chdir")) 
         printf("chdir [dir]: Cambia (o muestra) el directorio actual del shell\n");
-    else if (!strcmp(command[1], "date")) 
+    else if (!strcmp(string, "date")) 
         printf("date: Muestra la fecha actual\n");
-    else if (!strcmp(command[1], "time")) 
+    else if (!strcmp(string, "time")) 
         printf("time: Muestra la hora actual\n");
-    else if (!strcmp(command[1], "hist")) 
+    else if (!strcmp(string, "hist")) 
         printf("hist [-c|-N]: Muestra (o borra) el historico de comandos\n\t-N: muestra los "
                "N primeros\n\t-c: borra el historico\n");
-    else if (!strcmp(command[1], "command")) 
+    else if (!strcmp(string, "command")) 
         printf("command [-N]: Repite el comando N (del historico)\n");
-    else if (!strcmp(command[1], "open")) 
+    else if (!strcmp(string, "open")) 
         printf("open fich m1 m2...:	Abre el fichero fich. y lo anade a la lista de ficheros "
                "abiertos del shell\nm1, m2..es el modo de apertura (or bit a bit de los siguientes)\n\tcr: O_CREAT\tap: O_APPEND\n\tex: O_EXCL"
                "\tro: O_RDONLY\n\trw: O_RDWR\two: O_WRONLY\n\ttr: O_TRUNC\n");
-    else if (!strcmp(command[1], "close")) 
+    else if (!strcmp(string, "close")) 
         printf("close df: Cierra el descriptor df y elimina el correspondiente fichero de la "
                "lista de ficheros abiertos\n");
-    else if (!strcmp(command[1], "dup")) 
-        printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista "
-               "ficheros abiertos\n");
-    else if (!strcmp(command[1], "listopen")) 
+    else if (!strcmp(string, "dup")) 
+        printf("dup df: Duplica el descriptor de fichero df y anade una nueva entrada a la lista ficheros abiertos\n");
+    else if (!strcmp(string, "listopen")) 
         printf("listopen [n]: Lista los ficheros abiertos (al menos n) del shell\n");
-    else if (!strcmp(command[1], "infosys")) 
+    else if (!strcmp(string, "infosys")) 
         printf("infosys: Muestra informacion de la maquina donde corre el shell\n");
-    else if (!strcmp(command[1], "help")) 
+    else if (!strcmp(string, "help")) 
         printf("help [cmd|-lt|-T]: Muestra ayuda sobre los comandos\n\t-lt: lista topics de ayuda"
     "\n\t-T topic: lista comandos sobre ese topic\n\tcmd: info sobre el comando cmd\n");
-    else if (!strcmp(command[1], "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye")) 
-        printf("%s: Termina la "
-               "ejecucion del shell\n", command[1]);
-    else if (!strcmp(command[1], "create")) 
+    else if (!strcmp(string, "quit") || !strcmp(command[1], "exit") || !strcmp(command[1], "bye")) 
+        printf("%s: Termina la ejecucion del shell\n", command[1]);
+    else if (!strcmp(string, "create")) 
         printf("create [-f] [name]: Crea un directorio o un fichero (-f)\n");
-    else if (!strcmp(command[1], "stat")) 
+    else if (!strcmp(string, "stat")) 
         printf("stat [-long][-link][-acc] [name1] [name2] [...]:	lista ficheros\n\t-long: listado largo"
 	           "\n\t-acc: acesstime\n\t-link: si es enlace simbolico, el path contenido\n");
-    else if (!strcmp(command[1], "list")) 
+    else if (!strcmp(string, "list")) 
         printf("list [-reca] [-recb] [-hid][-long][-link][-acc] [n1] [n2] [...]: lista contenidos de directorios"
 	           "\n\t-hid: incluye los ficheros ocultos\n\t-recb: recursivo (antes)\n\t-reca: recursivo (despues)\n\tresto parametros como stat\n");
-    else if (!strcmp(command[1], "delete")) 
+    else if (!strcmp(string, "delete")) 
         printf("delete [name1] [name2] [...]: Borra ficheros o directorios vacios\n");
-    else if (!strcmp(command[1], "deltree")) 
+    else if (!strcmp(string, "deltree")) 
         printf("deltree [name1] [name2] [...]: Borra ficheros o directorios no vacios recursivamente\n");
-    else if (!strcmp(command[1], "malloc")) 
+    else if (!strcmp(string, "malloc")) 
         printf("malloc [-free] [tam]: asigna un bloque memoria de tamano tam con malloc \n\t-free:"
                "desasigna un bloque de memoria de tamano tam asignado con malloc\n");
-    else if (!strcmp(command[1], "shared")) 
+    else if (!strcmp(string, "shared")) 
         printf("shared [-free|-create|-delkey] cl [tam]: asigna memoria compartida con clave cl en el programa"
 	           "\n\t-create cl tam: asigna (creando) el bloque de memoria compartida de clave cl y tamano tam"
 	           "\n\t-free cl: desmapea el bloque de memoria compartida de clave cl"
 	           "\n\t-delkey clelimina del sistema (sin desmapear) la clave de memoria cl\n");
-    else if (!strcmp(command[1], "mmap")) 
+    else if (!strcmp(string, "mmap")) 
         printf("mmap [-free] fich prm: mapea el fichero fich con permisos prm \n\t-free fich: desmapea el ficherofich\n");
-    else if (!strcmp(command[1], "read")) 
+    else if (!strcmp(string, "read")) 
         printf("read fiche addr cont: lee cont bytes desde fich a la direccion addr\n");
-    else if (!strcmp(command[1], "write")) 
+    else if (!strcmp(string, "write")) 
         printf("write [-o] fiche addr cont: escribe cont bytes desde la direccion addr a fich (-o sobreescribe)\n");
-    else if (!strcmp(command[1], "memdump")) 
+    else if (!strcmp(string, "memdump")) 
         printf ("memdump addr cont: vuelca en pantallas los contenidos (cont bytes) de la posicion de memoria addr\n");
-    else if (!strcmp(command[1], "memfill")) 
+    else if (!strcmp(string, "memfill")) 
         printf("memfill addr cont byte: llena la memoria a partir de addr con byte\n");
-    else if (!strcmp(command[1], "mem")) 
+    else if (!strcmp(string, "mem")) 
         printf("mem [-blocks|-funcs|-vars|-all|-pmap] ..: muestra muestra detalles de la memoria del proceso"
 	           "\n\t-blocks: los bloques de memoria asignados"
 	           "\n\t-funcs: las direcciones de las funciones"
 	           "\n\t-vars: las direcciones de las variables"
 	           "\n\t:-all: todo"
 	           "\n\t-pmap: muestra la salida del comando pmap(o similar)\n");
-    else if (!strcmp(command[1], "recurse")) 
-        printf("recurse [n]: invoca a la funcion recursiva n veces\n");
+    else if (!strcmp(string, "uid")) 
+        printf("uid [-get|-set] [-l] [id]: ccede a las credenciales del proceso que ejecuta el shell"
+	           "\n\t-get: muestra las credenciales"
+	           "\n\t-set id: establece la credencial al valor numerico id"
+	           "\n\t-set -l id: establece la credencial a login id\n");
+    else if (!strcmp(string, "showvar")) 
+        printf("showvar var: muestra el valor y las direcciones de la variable de entorno var\n");
+    else if (!strcmp(string, "changevar")) 
+        printf("changevar [-a|-e|-p] var valor: cambia el valor de una variable de entorno"
+	           "\n\t-a: accede por el tercer arg de main"
+	           "\n\t-e: accede mediante environ"
+	           "\n\t-p: accede mediante putenv\n");
+    else if (!strcmp(string, "subsvar")) 
+        printf("subsvar [-a|-e] var1 var2 valor: sustituye la variable de entorno var1 con var2=valor"
+	           "\n\t-a: accede por el tercer arg de main"
+	           "\n\t-e: accede mediante environ\n");
+    else if (!strcmp(string, "showenv")) 
+        printf("showenv [-environ|-addr]: muestra el entorno del proceso"
+	           "\n\t-environ: accede usando environ (en lugar del tercer arg de main)"
+	           "\n\t-addr: muestra el valor y donde se almacenan environ y el 3er arg main\n");
+    else if (!strcmp(string, "fork")) 
+        printf("fork: el shell hace fork y queda en espera a que su hijo termine\n");
+    else if (!strcmp(string, "exec")) 
+        printf("exec VAR1 VAR2 ..prog args....[@pri]: ejecuta, sin crear proceso,prog con argumentos"
+	           "en un entorno que contiene solo las variables VAR1, VAR2...\n");
+    else if (!strcmp(string, "jobs")) 
+        printf("jobs: lista los procesos en segundo plano\n");
+    else if (!strcmp(string, "deljobs")) 
+        printf("deljobs [-term][-sig]: elimina los procesos de la lista procesos en sp"
+	           "\n\t-term: los terminados"
+	           "\n\t-sig: los terminados por senal\n");
+    else if (!strcmp(string, "job")) 
+        printf("job [-fg] pid: muestra informacion del proceso pid."
+		       "\n\t-fg: lo pasa a primer plano\n");
     else 
         printf("%s no encontrado\n", command[1]);
 }
 
-void f_quit(tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory) 
+void f_quit(tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory, tList * bg_proc) 
 { 
     deleteList(command_history); 
     deleteList(open_files); 
     deleteList(memory); 
     deleteList(shared_memory); 
     deleteList(mmap_memory); 
+    deleteList(bg_proc);
     exit(0); 
-}
-
-void f_invalid() 
-{ 
-    perror("No ejecutado"); 
 }
 
 void f_create(char ** command, tList * open_files)
@@ -1017,19 +1050,8 @@ void f_changevar(char ** command, char ** envp)
 	else if (!strcmp(command[1], "-e"))
 		env = environ;
 
-	if (!strcmp(command[1], "-a") || !strcmp(command[1], "-e")) 
-	{
-		while (true) //env no puede ser nulo ya que se verificó que la variable existe
-		{
-			if (!strncmp(*env, command[2], strlen(command[2]))) 
-			{
-            	*env = malloc(strlen(command[2]) + strlen(command[3]) + 2); // +2 para el carácter nulo y el =
-            	sprintf(*env, "%s=%s", command[2], command[3]);
-            	break;
-       	 	}
-			env++;
-		}
-	}
+	if ((!strcmp(command[1], "-a") || !strcmp(command[1], "-e")) && findVariable(command[2], env) != -1) 
+        changeVar(command[2], command[3], env);
 	else if (!strcmp(command[1], "-p"))
 	{
 		sprintf(string, "%s=%s", command[2], command[3]);
@@ -1060,16 +1082,11 @@ void f_subsvar(char ** command, char ** envp)
 	else if (!strcmp(command[1], "-e"))
 		env = environ;
 
-	while (true) //env no puede ser nulo ya que se verificó que la variable existe
+	if (findVariable(command[2], env) != -1) 
 	{
-		if (!strncmp(*env, command[2], strlen(command[2]))) 
-		{
-            *env = malloc(strlen(command[3]) + strlen(command[4]) + 2); // +2 para el carácter nulo y el =
-            sprintf(*env, "%s=%s", command[3], command[4]);
-            break;
-       	}
-		env++;
-	}
+        *env = malloc(strlen(command[3]) + strlen(command[4]) + 2); // +2 para el carácter nulo y el =
+        sprintf(*env, "%s=%s", command[3], command[4]);
+    }
 }
 
 void f_showenv(char ** command, char ** envp)
@@ -1094,19 +1111,17 @@ void f_showenv(char ** command, char ** envp)
                 (void*)environ, (void*)&environ, (void*)envp, (void*)&envp);
 }
 
-void f_fork(char ** command)
+void f_fork(char ** command, tList * bg_proc)
 {
-    pid_t pid = fork();
-    int status;
+    pid_t pid;
 
-    if (pid == -1) 
-        { perror("Error al hacer fork"); return;} 
-    else if (!pid) 
+    if (!(pid = fork())) 
     {
         printf("ejecutando proceso %d\n", getpid());
-        execvp("fork", command);
+        deleteList(bg_proc);
     }
-    else waitpid(pid, &status, 0);
+    else if (pid != -1) 
+        waitpid(pid, NULL, 0);
 }
 
 void f_exec(char ** command)
@@ -1128,16 +1143,16 @@ void f_exec(char ** command)
     free(string);
 }
 
-void f_jobs() { system("ps -e --format pid,cmd,state | grep -v 'R'"); }
+void f_jobs(tList * bg_proc) { printList(bg_proc); }
 
-void f_deljobs(char ** command)
+void f_deljobs(char ** command, tList * bg_proc)
 {
     char *command_getpid = MALLOC, *pid = malloc(10*sizeof(char));
     FILE *output;
 
     if (!command[1] ||
         (strcmp(command[1], "-term") && strcmp(command[1], "-sig"))) 
-        { f_jobs(); return; }
+        { f_jobs(bg_proc); return; }
 
     if (!strcmp(command[1], "-term")) 
         strcpy(command_getpid, "ps -e --format pid,state | grep -v 'R' | grep 'T' | awk '{print $1}'");
@@ -1153,8 +1168,69 @@ void f_deljobs(char ** command)
             { perror("Error al matar el proceso"); return; }
 }
 
+void f_job(char ** command, tList * bg_proc)
+{
+    tPosL pos;
 
-void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory)
+    if (!command[1] || //no hay argumentos
+        (!strcmp(command[1], "-fg") && !command[2]) || //el argumento es -fg y no hay command[2]
+        !isDigitString(command[strcmp(command[1], "-fg")? 1:2])) //el argumento no es un digito
+        printList(bg_proc);
+
+    if (strcmp(command[1], "-fg"))
+    {
+        for (pos = first(*bg_proc); pos; pos = next(pos))
+            if (!strcmp(strtok(getItem(pos), " "), command[1]))
+                { printItem(pos); break; }
+
+        if (!pos) printList(bg_proc); 
+
+        return;
+    }
+}
+
+
+void f_invalid(char ** command, tList * bg_proc) 
+{ 
+    char *untrimmed_command = MALLOC, *item = MALLOC, *time_string = MALLOC, *route = MALLOC, status;
+    int i, exit_code;
+    pid_t pid;
+    time_t t; 
+    time(&t); 
+    struct tm *local = localtime(&t);
+    FILE *file;
+    bool ampersand;
+
+    strcpy(untrimmed_command, command[0]);
+    for (i = 1; command[i]; i++)
+    {
+        strcat(untrimmed_command, " ");
+        strcat(untrimmed_command, command[i]);
+    }
+    
+    exit_code = system(untrimmed_command);
+    ampersand = !strcmp(command[stringsSize(command)-1], "&");
+
+    if (ampersand)
+    {
+        snprintf(route, sizeof(route), "/proc/%d/stat", pid);
+        file = fopen(route, "r");
+        if (!file) 
+            { printf("Error al abrir el archivo de estado del proceso.\n"); return; }
+
+        // Leer el estado del proceso desde el archivo
+        fscanf(file, "%*d %*s %c", &status); // Leer el segundo campo, que contiene el estado
+        fclose(file);
+        if (ampersand)
+            untrimmed_command[stringsSize(untrimmed_command-2)] = '\0';
+
+        strftime(time_string, MAX_PROMPT, "%b %d %H:%M", local);
+        sprintf(item, "%d %s p=%d %s %s (%d) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), status, exit_code, untrimmed_command);
+    }
+}
+
+
+void processCommand(char ** command, int (*main)(int, char**, char**), char ** envp, tList * command_history, tList * open_files, tList * memory, tList * shared_memory, tList * mmap_memory, tList * bg_proc)
 {
     if (!command || !command[0]) return;
     char first[MAX_PROMPT];
@@ -1172,7 +1248,7 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "hist"))   
         f_hist(command, command_history);
     else if (!strcmp(first, "command")) 
-        f_command(command, main, envp, command_history, open_files, memory, shared_memory, mmap_memory);
+        f_command(command, main, envp, command_history, open_files, memory, shared_memory, mmap_memory, bg_proc);
     else if (!strcmp(first, "open")) 
         f_open(command, open_files, true);
     else if (!strcmp(first, "close")) 
@@ -1186,8 +1262,8 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "help")) 
         f_help(command);
     else if (!strcmp(first, "quit") || !strcmp(command[0], "exit") || !strcmp(command[0], "bye")) 
-        f_quit(command_history, open_files, memory, shared_memory, mmap_memory);
-    else if (!strcmp(first, "clear")) system("clear");
+        f_quit(command_history, open_files, memory, shared_memory, mmap_memory, bg_proc);
+    else if (!strcmp(first, "clear")) system("clear"); //quitar
     else if (!strcmp(first, "create")) 
         f_create(command, open_files);
     else if (!strcmp(first, "stat")) 
@@ -1225,16 +1301,16 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
     else if (!strcmp(first, "showenv")) 
         f_showenv(command, envp);
     else if (!strcmp(first, "fork")) 
-        f_fork(command);
+        f_fork(command, bg_proc);
     else if (!strcmp(first, "exec")) 
         f_exec(command);
     else if (!strcmp(first, "jobs"))
-        f_jobs();
+        f_jobs(bg_proc);
     else if (!strcmp(first, "deljobs")) 
-        f_deljobs(command);
+        f_deljobs(command, bg_proc);
     else if (!strcmp(first, "job")) 
-        return;
+        f_job(command, bg_proc);
     else 
-        f_invalid();
+        f_invalid(command, bg_proc);
 }
 

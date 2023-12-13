@@ -23,6 +23,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/resource.h>
 
 #define MAX_PROMPT 16384
 #define MALLOC_PTR malloc(MAX_PROMPT*sizeof(char*))

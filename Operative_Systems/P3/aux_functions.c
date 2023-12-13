@@ -504,3 +504,41 @@ void show_credentials()
     if (pw) printf("(%s)\n", pw->pw_name);
     else printf("(Desconocido)\n");
 }
+
+int findVariable(char * var, char ** e)  /*busca una variable en el entorno que se le pasa como parÃ¡metro*/
+{
+  	int i = 0;
+  	char *aux = MALLOC;
+  
+  	strcpy (aux,var);
+  	strcat (aux,"=");
+  
+  	while (e[i]!=NULL)
+    	if (!strncmp(e[i],aux,strlen(aux)))
+      		return i;
+    	else i++;
+  	errno=ENOENT;
+  	return -1;
+}
+
+int changeVar(char * var, char * valor, char ** e)
+{                                                       
+  	int pos;
+  	char *aux;
+   
+  	if ((pos=findVariable(var,e))==-1 || !(aux=(char*)malloc(strlen(var)+strlen(valor)+2)))
+    	return -1;
+
+    sprintf(aux, "%s=%s", var, valor);
+  	e[pos]=aux;
+  	return pos;
+}
+
+int stringsSize(char ** strings)
+{
+    int i;
+
+    for (i = 0; strings[i]; i++);
+
+    return i;
+}
