@@ -564,3 +564,113 @@ char *processStatus(char c)
         default: return NULL;
     }
 }
+
+/*
+tPosL getPosByPid(int pid, tList *bg_proc)
+{
+    tPosL pos;
+
+    for (pos = first(*bg_proc); pos && atoi(getItem(pos)[0])!=pid; pos = next(pos));
+
+    return pos;
+}
+*/
+struct SEN {
+    const char *name;
+    int signal_number;
+};
+
+static struct SEN sigstrnum[]={   
+	{"HUP", SIGHUP},
+	{"INT", SIGINT},
+	{"QUIT", SIGQUIT},
+	{"ILL", SIGILL}, 
+	{"TRAP", SIGTRAP},
+	{"ABRT", SIGABRT},
+	{"IOT", SIGIOT},
+	{"BUS", SIGBUS},
+	{"FPE", SIGFPE},
+	{"KILL", SIGKILL},
+	{"USR1", SIGUSR1},
+	{"SEGV", SIGSEGV},
+	{"USR2", SIGUSR2}, 
+	{"PIPE", SIGPIPE},
+	{"ALRM", SIGALRM},
+	{"TERM", SIGTERM},
+	{"CHLD", SIGCHLD},
+	{"CONT", SIGCONT},
+	{"STOP", SIGSTOP},
+	{"TSTP", SIGTSTP}, 
+	{"TTIN", SIGTTIN},
+	{"TTOU", SIGTTOU},
+	{"URG", SIGURG},
+	{"XCPU", SIGXCPU},
+	{"XFSZ", SIGXFSZ},
+	{"VTALRM", SIGVTALRM},
+	{"PROF", SIGPROF},
+	{"WINCH", SIGWINCH}, 
+	{"IO", SIGIO},
+	{"SYS", SIGSYS},
+/*senales que no hay en todas partes*/
+#ifdef SIGPOLL
+	{"POLL", SIGPOLL},
+#endif
+#ifdef SIGPWR
+	{"PWR", SIGPWR},
+#endif
+#ifdef SIGEMT
+	{"EMT", SIGEMT},
+#endif
+#ifdef SIGINFO
+	{"INFO", SIGINFO},
+#endif
+#ifdef SIGSTKFLT
+	{"STKFLT", SIGSTKFLT},
+#endif
+#ifdef SIGCLD
+	{"CLD", SIGCLD},
+#endif
+#ifdef SIGLOST
+	{"LOST", SIGLOST},
+#endif
+#ifdef SIGCANCEL
+	{"CANCEL", SIGCANCEL},
+#endif
+#ifdef SIGTHAW
+	{"THAW", SIGTHAW},
+#endif
+#ifdef SIGFREEZE
+	{"FREEZE", SIGFREEZE},
+#endif
+#ifdef SIGLWP
+	{"LWP", SIGLWP},
+#endif
+#ifdef SIGWAITING
+	{"WAITING", SIGWAITING},
+#endif
+ 	{NULL,-1},
+	};    /*fin array sigstrnum */
+
+
+int signalValue(char * signal) 
+{ 
+    int i;
+
+    for (i = 0; sigstrnum[i].name; i++)
+  	    if (!strcmp(signal, sigstrnum[i].name))
+		    return sigstrnum[i].signal_number;
+
+    return -1;
+}
+
+
+const char *signalName(int signal)
+{			
+    int i;
+
+    for (i=0; sigstrnum[i].name; i++)
+  	    if (signal==sigstrnum[i].signal_number)
+		    return sigstrnum[i].name;
+
+    return ("SIGUNKNOWN");
+}

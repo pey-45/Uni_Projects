@@ -2,6 +2,8 @@
 
 #define PERMISSIONS 0644 //para memoria compartida
 
+int status;
+
 extern char **environ;
 
 int globalvar_noinit1;
@@ -1136,7 +1138,56 @@ void f_exec(char ** command)
     free(string);
 }
 
-void f_jobs(tList * bg_proc) { printList(bg_proc); }
+void f_jobs(tList * bg_proc)
+{ 
+    tPosL pos;
+    char **process = MALLOC_PTR, *finalprocess = MALLOC, *aux_string = MALLOC;
+    pid_t pid;
+
+    for(pos = first(* bg_proc); pos; pos = next(pos))
+    {
+        initializeString(finalprocess);
+
+        strcpy(aux_string, getItem(pos));
+        trimString(aux_string, process);
+
+        pid = atoi(process[0]);
+
+        if(pid == -1){
+            perror("No se pudo realizar waitpid");
+            return;
+        }
+
+        sprintf(process[2], "p=%d", getpriority(PRIO_PROCESS, atoi(process[0])));
+        
+        if (WIFEXITED(status)) { //el proceso ha terminado
+            process[5] = malloc(10*sizeof(char));
+            sprintf(process[5], "TERMINADO");
+            sprintf(process[6], "(%03d)", WEXITSTATUS(status));
+        }
+
+        else if (WIFSIGNALED(status)) { //proceso interrumpido por una señal
+            process[5] = malloc(10*sizeof(char));
+            sprintf(process[5], "SIGNALED");
+            process[6] = malloc(10*sizeof(char));
+            sprintf(process[6], "(%s)", signalName(WTERMSIG(status)));
+        } 
+
+        else if (WIFSTOPPED(status)) { //paused
+            process[5] = malloc(10*sizeof(char));
+            sprintf(process[5], "PAUSADO");
+            process[6] = malloc(10*sizeof(char));
+            sprintf(process[6], "(%s)", signalName(WSTOPSIG(status)));
+        }
+
+        untrimString(process, finalprocess);
+
+        untrimString(process, finalprocess);    
+        updateItem(finalprocess, pos);
+        printItem(pos);
+        printf("\n");
+    }
+}
 
 void f_deljobs(char ** command, tList * bg_proc)
 {
@@ -1182,8 +1233,7 @@ void f_job(char ** command, tList * bg_proc)
 
 void f_invalid(char ** command, tList * bg_proc) 
 { 
-    char *untrimmed_command = MALLOC, *item = MALLOC, *time_string = MALLOC, *aux_string = MALLOC, **aux_strings = MALLOC_PTR;
-    int status;
+    char *untrimmed_command = MALLOC, *item = MALLOC, *time_string = MALLOC;
     pid_t pid;
     time_t t; 
     time(&t); 
@@ -1193,43 +1243,22 @@ void f_invalid(char ** command, tList * bg_proc)
     untrimString(command, untrimmed_command);
     ampersand = !strcmp(command[stringsSize(command)-1], "&");
 
-    if (ampersand)
-    {
-        pid = fork();
-
-        if (pid < 0) 
-        {
-            perror("Error al crear el proceso hijo");
-            return;
+    if (ampersand) {
+        if (!(pid = fork())) {
+            free(command[stringsSize(command) - 1]);
+            command[stringsSize(command) - 1] = NULL;
+            execvp(command[0], command);
+            // Manejar errores si execvp falla
+            fprintf(stderr, "Error al ejecutar el comando en segundo plano\n");
+            exit(EXIT_FAILURE);
         }
-        else if (!pid) 
-        {
-            strftime(time_string, MAX_PROMPT, "%Y/%m/%d %H:%M:%S", local);
-            sprintf(item, "%d %s p=%d %s %s (%03d) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), time_string, "ACTIVO", 0, untrimmed_command);
-            item[strlen(item)-2] = '\0'; //quitar &
-            insertItem(item, NULL, bg_proc);
-            printItem(findItem(item, *bg_proc));
-            printf("\n");
 
-            execl("/bin/sh", "sh", "-c", untrimmed_command, NULL);
-        }
-        else 
-        {
-            waitpid(pid, &status, 0);
-
-            strcpy(aux_string, getItem(last(*bg_proc)));
-            trimString(aux_string, aux_strings);
-            initializeString(aux_string);
-            strcpy(aux_strings[5], "TERMINADO");
-            sprintf(aux_strings[6], "(%d)", status);
-            untrimString(aux_strings, aux_string);
-
-            updateItem(aux_string, last(*bg_proc));
-        }
-    }
-    else 
-    {
-        printf("Puta mierda");
+        waitpid(pid, &status, WNOHANG);
+        strftime(time_string, MAX_PROMPT, "%Y/%m/%d %H:%M:%S", local);
+        sprintf(item, "%d %s p=%d %s ACTIVO (000) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), time_string, untrimmed_command);
+        item[strlen(item) - 2] = '\0'; // Quitar el &
+        insertItem(item, NULL, bg_proc);
+    } else {
         system(untrimmed_command);
     }
 }

@@ -35,6 +35,9 @@ int findVariable(char * var, char ** e);
 int changeVar(char * var, char * valor, char ** e);
 int stringsSize(char ** strings);
 char *processStatus(char c);
+//tPosL getPosByPid(int pid, tList *bg_proc);
+int signalValue(char * signal);
+const char *signalName(int signal);
 
 
 #endif //AUX_FUNCTIONS_H
