@@ -51,10 +51,12 @@ void untrimString(char ** strings, char * string)
 {
     int i;
 
+    if (!strings[0]) return;
+
     strcpy(string, strings[0]);
     for (i = 1; strings[i]; i++)
     { 
-        strcat(string, " "); 
+        strcat(string, " ");
         strcat(string, strings[i]);
     }
 }
@@ -518,13 +520,14 @@ void show_credentials()
 int findVariable(char * var, char ** e)  /*busca una variable en el entorno que se le pasa como parÃ¡metro*/
 {
   	int i = 0;
-  	char *aux = MALLOC;
+  	char aux[MAX_PROMPT];
   
     sprintf(aux, "%s=", var);
   
-  	while (e[i]!=NULL)
-    	if (!strncmp(e[i],aux,strlen(aux)))
-      		return i;
+  	while (e[i])
+    	if (!strncmp(e[i], aux, strlen(aux)-1)){
+            return i;
+        }
     	else i++;
   	errno=ENOENT;
   	return -1;
@@ -533,10 +536,9 @@ int findVariable(char * var, char ** e)  /*busca una variable en el entorno que 
 int changeVar(char * var, char * valor, char ** e)
 {                                                       
   	int pos;
-  	char *aux;
+  	char aux[MAX_PROMPT];
    
-  	if ((pos=findVariable(var,e))==-1 || !(aux=(char*)malloc(strlen(var)+strlen(valor)+2)))
-    	return -1;
+  	if ((pos=findVariable(var,e))==-1) return -1;
 
     sprintf(aux, "%s=%s", var, valor);
   	e[pos]=aux;
@@ -565,16 +567,6 @@ char *processStatus(char c)
     }
 }
 
-/*
-tPosL getPosByPid(int pid, tList *bg_proc)
-{
-    tPosL pos;
-
-    for (pos = first(*bg_proc); pos && atoi(getItem(pos)[0])!=pid; pos = next(pos));
-
-    return pos;
-}
-*/
 struct SEN {
     const char *name;
     int signal_number;
@@ -673,4 +665,14 @@ const char *signalName(int signal)
 		    return sigstrnum[i].name;
 
     return ("SIGUNKNOWN");
+}
+
+//solo funciona con bg_proc
+int getPidFromPos(tPosL pos)
+{
+    char string[MAX_PROMPT];
+
+    strcpy(string, getItem(pos));
+
+    return atoi(strtok(string, " "));
 }

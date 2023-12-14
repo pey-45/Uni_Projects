@@ -2,17 +2,16 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
 
 int main() {
-    srand(time(NULL)); // Inicializar la semilla para generar números aleatorios
-    int i = 0;
+    
+    char *string = malloc(2048);
 
-    while (i < 20) {
-        int numeroAleatorio = rand();
-        printf("Número aleatorio: %d\n", numeroAleatorio);
-        sleep(1); // Espera un segundo
-        i++;
-    }
+    strcpy(string, "hello");
+    strcpy(string, "worldxd");
+
+    free(string);
 
     return 0;
 }

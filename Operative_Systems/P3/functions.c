@@ -2,8 +2,6 @@
 
 #define PERMISSIONS 0644 //para memoria compartida
 
-int status;
-
 extern char **environ;
 
 int globalvar_noinit1;
@@ -1031,41 +1029,40 @@ void f_showvar(char ** command, int (*main)(int, char**, char**), char ** envp)
 
 void f_changevar(char ** command, char ** envp)
 {
-    char **env, *string = MALLOC;
-	if (!string)
-		{ perror("Error al asignar memoria"); return; }
+    char **env, string[MAX_PROMPT];
+    int position;
 
 	if (!command[3] ||
 		(strcmp(command[1], "-a") && strcmp(command[1], "-e") && strcmp(command[1], "-p"))) 
    	{
         printf("Uso: changevar [-a|-e|-p] var valor\n");
-		free(string);
         return;
     }
 
 	if (!getenv(command[2])) //verifica que existe la variable, no se almacena
-		{ perror("Imposible cambiar variable"); free(string); return; }
+		{ perror("Imposible cambiar variable"); return; }
 
 	if (!strcmp(command[1], "-a"))
 		env = envp;
 	else if (!strcmp(command[1], "-e"))
 		env = environ;
 
-	if ((!strcmp(command[1], "-a") || !strcmp(command[1], "-e")) && findVariable(command[2], env) != -1) 
-        changeVar(command[2], command[3], env);
-	else if (!strcmp(command[1], "-p"))
-	{
+	if ((strcmp(command[1], "-p")) && (position = findVariable(command[2], env)) != -1) {
+        sprintf(env[position]+strlen(command[2])+1, "%s", command[3]);
+    }
+	else {
 		sprintf(string, "%s=%s", command[2], command[3]);
 		putenv(string);
 	}
-	free(string);
 }
 
 void f_subsvar(char ** command, char ** envp)
 {
     char **env, *string = MALLOC;
+    int position;
+
 	if (!string)
-		{ perror("Error al asignar memoria"); return; }
+		{ perror("Error al asignar memoria"); free(string); return; }
 
 	if (!command[4] ||
 		(strcmp(command[1], "-a") && strcmp(command[1], "-e"))) 
@@ -1083,11 +1080,10 @@ void f_subsvar(char ** command, char ** envp)
 	else if (!strcmp(command[1], "-e"))
 		env = environ;
 
-	if (findVariable(command[2], env) != -1) 
-	{
-        *env = malloc(strlen(command[3]) + strlen(command[4]) + 2); // +2 para el carácter nulo y el =
-        sprintf(*env, "%s=%s", command[3], command[4]);
-    }
+	if ((position = findVariable(command[2], env)) != -1) 
+        sprintf(env[position], "%s=%s", command[3], command[4]);
+
+    free(string);
 }
 
 void f_showenv(char ** command, char ** envp)
@@ -1127,7 +1123,7 @@ void f_fork(char ** command, tList * bg_proc)
 
 void f_exec(char ** command)
 {
-    char *string = MALLOC;
+    char string[MAX_PROMPT];
 
     if (!command[1]) 
         { printf("Imposible ejecutar: Bad address\n"); return; }
@@ -1135,58 +1131,70 @@ void f_exec(char ** command)
     untrimString(command+1/*desde command[1]*/, string);
 
     system(string);
-    free(string);
 }
 
 void f_jobs(tList * bg_proc)
 { 
     tPosL pos;
-    char **process = MALLOC_PTR, *finalprocess = MALLOC, *aux_string = MALLOC;
+    char **process = MALLOC_PTR, *item = MALLOC, *aux_string = MALLOC, *time_string = MALLOC, *command_copy = MALLOC, *time_copy = MALLOC, *user_copy = MALLOC;
     pid_t pid;
+    int status;
+    time_t t; 
+    time(&t); 
+    struct tm *local = localtime(&t);
 
-    for(pos = first(* bg_proc); pos; pos = next(pos))
+    for (pos = first(*bg_proc); pos; pos = next(pos))
     {
-        initializeString(finalprocess);
+        pid = getPidFromPos(pos);
+        strftime(time_string, MAX_PROMPT, "%Y/%m/%d %H:%M:%S", local);
 
         strcpy(aux_string, getItem(pos));
         trimString(aux_string, process);
 
-        pid = atoi(process[0]);
+        //obtener copia del comando
+        initializeString(command_copy);
+        for (int i = 7; process[i]; i++){
+            strcat(command_copy, process[i]);
+            strcat(command_copy, " ");
+        }
+        command_copy[strlen(command_copy)-1] = '\0';
 
-        if(pid == -1){
+        //obtener copia de la hora
+        strcpy(time_copy, process[3]);
+        sprintf(time_copy, "%s %s", process[3], process[4]);
+
+        //obtener copia del username
+        strcpy(user_copy, process[1]);
+
+        if (!strcmp(process[5], "ACTIVO") || !strcmp(process[5], "PAUSADO") )
+            waitpid(getPidFromPos(pos), &status, WNOHANG);
+        else {
+            printItem(pos);
+            printf("\n");
+            continue;
+        }
+
+        if (pid == -1) {
             perror("No se pudo realizar waitpid");
+            freeAll(7, item, aux_string, time_string, command_copy, time_copy, user_copy, process);
             return;
         }
+            
+        if (WIFEXITED(status)) //el proceso ha terminado
+            sprintf(item, "%d %s p=%d %s TERMINADO (%03d) %s", pid, user_copy, getpriority(PRIO_PROCESS, pid), time_copy, WEXITSTATUS(status), command_copy);
 
-        sprintf(process[2], "p=%d", getpriority(PRIO_PROCESS, atoi(process[0])));
-        
-        if (WIFEXITED(status)) { //el proceso ha terminado
-            process[5] = malloc(10*sizeof(char));
-            sprintf(process[5], "TERMINADO");
-            sprintf(process[6], "(%03d)", WEXITSTATUS(status));
-        }
+        else if (WIFSIGNALED(status)) //proceso interrumpido por una señal
+            sprintf(item, "%d %s p=%d %s SENALADO (%s) %s", pid, user_copy, getpriority(PRIO_PROCESS, pid), time_copy, signalName(WTERMSIG(status)), command_copy);
 
-        else if (WIFSIGNALED(status)) { //proceso interrumpido por una señal
-            process[5] = malloc(10*sizeof(char));
-            sprintf(process[5], "SIGNALED");
-            process[6] = malloc(10*sizeof(char));
-            sprintf(process[6], "(%s)", signalName(WTERMSIG(status)));
-        } 
+        else if (WIFSTOPPED(status)) //paused
+            sprintf(item, "%d %s p=%d %s PAUSADO (%s) %s", pid, user_copy, getpriority(PRIO_PROCESS, pid), time_copy, signalName(WSTOPSIG(status)), command_copy);
 
-        else if (WIFSTOPPED(status)) { //paused
-            process[5] = malloc(10*sizeof(char));
-            sprintf(process[5], "PAUSADO");
-            process[6] = malloc(10*sizeof(char));
-            sprintf(process[6], "(%s)", signalName(WSTOPSIG(status)));
-        }
-
-        untrimString(process, finalprocess);
-
-        untrimString(process, finalprocess);    
-        updateItem(finalprocess, pos);
+        updateItem(item, pos);
         printItem(pos);
         printf("\n");
     }
+
+    freeAll(7, item, aux_string, time_string, command_copy, time_copy, user_copy, process);
 }
 
 void f_deljobs(char ** command, tList * bg_proc)
@@ -1196,7 +1204,7 @@ void f_deljobs(char ** command, tList * bg_proc)
 
     if (!command[1] ||
         (strcmp(command[1], "-term") && strcmp(command[1], "-sig"))) 
-        { f_jobs(bg_proc); return; }
+        { f_jobs(bg_proc); freeAll(2, command_getpid, pid); return; }
 
     if (!strcmp(command[1], "-term")) 
         strcpy(command_getpid, "ps -e --format pid,state | grep -v 'R' | grep 'T' | awk '{print $1}'");
@@ -1205,11 +1213,11 @@ void f_deljobs(char ** command, tList * bg_proc)
     
     
     if (!(output = popen(command_getpid, "r")))
-        { perror("Error al ejecutar el comando"); return; }
+        { perror("Error al ejecutar el comando"); freeAll(2, command_getpid, pid); return; }
     
     while (fgets(pid, sizeof(pid), output))
         if (kill(atoi(pid), SIGKILL) == -1) 
-            { perror("Error al matar el proceso"); return; }
+            { perror("Error al matar el proceso"); freeAll(2, command_getpid, pid); return; }
 }
 
 void f_job(char ** command, tList * bg_proc)
@@ -1245,15 +1253,14 @@ void f_invalid(char ** command, tList * bg_proc)
 
     if (ampersand) {
         if (!(pid = fork())) {
-            free(command[stringsSize(command) - 1]);
             command[stringsSize(command) - 1] = NULL;
+            freeAll(3, untrimmed_command, item, time_string);
             execvp(command[0], command);
             // Manejar errores si execvp falla
             fprintf(stderr, "Error al ejecutar el comando en segundo plano\n");
             exit(EXIT_FAILURE);
         }
 
-        waitpid(pid, &status, WNOHANG);
         strftime(time_string, MAX_PROMPT, "%Y/%m/%d %H:%M:%S", local);
         sprintf(item, "%d %s p=%d %s ACTIVO (000) %s", pid, getenv("USER"), getpriority(PRIO_PROCESS, pid), time_string, untrimmed_command);
         item[strlen(item) - 2] = '\0'; // Quitar el &
@@ -1261,6 +1268,8 @@ void f_invalid(char ** command, tList * bg_proc)
     } else {
         system(untrimmed_command);
     }
+
+    freeAll(3, untrimmed_command, item, time_string);
 }
 
 
@@ -1344,6 +1353,13 @@ void processCommand(char ** command, int (*main)(int, char**, char**), char ** e
         f_deljobs(command, bg_proc);
     else if (!strcmp(first, "job")) 
         f_job(command, bg_proc);
+    else if (!strcmp(first, "hola"))
+    {
+        for (int i = 0; envp[i]; i++)
+        {
+            printf("%s\n", envp[i]);
+        }
+    }
     else 
         f_invalid(command, bg_proc);
 }

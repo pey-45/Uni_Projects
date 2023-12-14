@@ -11,13 +11,9 @@ execute:
 	./p3
 
 valgrind:
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./p3
+	mkdir valgrind
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind/valgrind-report.txt ./p3
 
 clean:
 	rm -f *.o *.txt p3
-
-ref:
-	./shell.out
-
-ref-valgrind:
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose ./shell.out
+	if [ -d "valgrind" ]; then rm -r valgrind; fi

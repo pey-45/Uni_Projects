@@ -38,6 +38,7 @@ char *processStatus(char c);
 //tPosL getPosByPid(int pid, tList *bg_proc);
 int signalValue(char * signal);
 const char *signalName(int signal);
+int getPidFromPos(tPosL pos);
 
 
 #endif //AUX_FUNCTIONS_H
